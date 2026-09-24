@@ -2899,27 +2899,95 @@ function viewTabbar(){
 render();
 autoSincronizarAlAbrir();
 </script>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Tu App</title>
-    <!-- 1. Asegúrate de incluir la librería de Supabase aquí arriba -->
-    <script src="https://jsdelivr.net"></script>
-</head>
-<body>
 
-    <!-- El contenido actual de tu página va aquí -->
+<!-- Cargar librería de Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- 2. Pega el script de validación aquí al final -->
-    <script>
-        const SUPABASE_URL = "https://supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_AnwNz39_voG8r7XnjCG6Vg_75jK9Aa7";
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+<!-- Bloque del candado de licencias -->
+<div id="contenedor-licencia" style="padding: 20px; background: #f4f4f9; border-bottom: 2px solid #ccc; text-align: center; font-family: sans-serif;">
+    <h3>🔑 Verificación de Licencia</h3>
+    <input type="text" id="claveInput" placeholder="Introduce tu clave de licencia" style="padding: 8px; width: 250px; font-size: 16px;">
+    <button onclick="validarMiLicencia()" style="padding: 8px 15px; font-size: 16px; cursor: pointer;">Verificar</button>
+    <p id="resultado" style="font-weight: bold; margin-top: 10px;"></p>
+</div>
 
-        // ... (todo el resto del código que te pasé arriba) ...
-    </script>
+<script>
+    const SUPABASE_URL = "https://kbskmdtgwnagdigtdlze.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_AnwNz39_voG8r7XnjCG6Vg_75jK9Aa7";
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    window.addEventListener('DOMContentLoaded', async () => {
+        const claveGuardada = localStorage.getItem('mi_clave_licencia');
+        if (claveGuardada) {
+            document.getElementById('claveInput').value = claveGuardada;
+            await validarMiLicencia(claveGuardada, true); 
+        }
+    });
+
+    function obtenerHuellaDispositivo() {
+        const agente = navigator.userAgent;
+        const idioma = navigator.language;
+        const pantalla = `${screen.width}x${screen.height}`;
+        return btoa(`${agente}-${idioma}-${pantalla}`).slice(0, 32);
+    }
+
+    async function validarMiLicencia(claveForzada = null, esSilencioso = false) {
+        const clave = claveForzada || document.getElementById('claveInput').value.trim();
+        const textoResultado = document.getElementById('resultado');
+
+        if (!clave) {
+            textoResultado.innerText = "Por favor, escribe una clave.";
+            textoResultado.style.color = "orange";
+            return;
+        }
+
+        if (!esSilencioso) {
+            textoResultado.innerText = "Verificando...";
+            textoResultado.style.color = "black";
+        }
+
+        const idDispositivo = obtenerHuellaDispositivo();
+
+        try {
+            const { data, error } = await supabase.rpc('verificar_licencia', {
+                p_clave: clave,
+                p_dispositivo: idDispositivo
+            });
+
+            if (error) throw error;
+
+            switch (data) {
+                case 'ok':
+                    textoResultado.innerText = "¡Licencia válida! Acceso concedido.";
+                    textoResultado.style.color = "green";
+                    localStorage.setItem('mi_clave_licencia', clave);
+                    break;
+                case 'invalida':
+                    textoResultado.innerText = "La clave no existe.";
+                    textoResultado.style.color = "red";
+                    localStorage.removeItem('mi_clave_licencia');
+                    break;
+                case 'inactiva':
+                    textoResultado.innerText = "Esta licencia ha sido desactivada.";
+                    textoResultado.style.color = "red";
+                    localStorage.removeItem('mi_clave_licencia');
+                    break;
+                case 'otro_dispositivo':
+                    textoResultado.innerText = "Esta clave ya está vinculada a otro dispositivo.";
+                    textoResultado.style.color = "red";
+                    localStorage.removeItem('mi_clave_licencia');
+                    break;
+                default:
+                    textoResultado.innerText = "Error desconocido.";
+                    textoResultado.style.color = "gray";
+            }
+        } catch (err) {
+            console.error(err);
+            textoResultado.innerText = "Error de conexión.";
+            textoResultado.style.color = "red";
+        }
+    }
+</script>
 </body>
 </html>
-</body>
-</html>
+
