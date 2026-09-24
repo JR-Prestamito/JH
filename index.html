@@ -2896,98 +2896,106 @@ function viewTabbar(){
   }, { passive: true });
 })();
 
-render();
-autoSincronizarAlAbrir();
-</script>
+// --- Licencia de un solo dispositivo, verificada contra Supabase ------------------
+// Antes de arrancar la app se pregunta a Supabase si la clave de licencia ingresada
+// existe, está activa, y si ya está "amarrada" a otro dispositivo. Cada dispositivo
+// se identifica con un ID aleatorio guardado en localStorage (no es información
+// personal, es solo un identificador técnico de este navegador/dispositivo).
+const LIC_SUPABASE_URL = "https://kbskmdtgwnagdigtdlze.supabase.co";
+const LIC_SUPABASE_KEY = "sb_publishable_AnwNz39_voG8r7XnjCG6Vg_75jK9Aa7";
 
-<!-- Cargar librería de Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+function licDeviceId(){
+  let id = localStorage.getItem("jrp_device_id");
+  if(!id){
+    id = (crypto.randomUUID ? crypto.randomUUID() : ("dev-" + Date.now() + "-" + Math.random().toString(16).slice(2)));
+    localStorage.setItem("jrp_device_id", id);
+  }
+  return id;
+}
 
-<!-- Bloque del candado de licencias -->
-<div id="contenedor-licencia" style="padding: 20px; background: #f4f4f9; border-bottom: 2px solid #ccc; text-align: center; font-family: sans-serif;">
-    <h3>🔑 Verificación de Licencia</h3>
-    <input type="text" id="claveInput" placeholder="Introduce tu clave de licencia" style="padding: 8px; width: 250px; font-size: 16px;">
-    <button onclick="validarMiLicencia()" style="padding: 8px 15px; font-size: 16px; cursor: pointer;">Verificar</button>
-    <p id="resultado" style="font-weight: bold; margin-top: 10px;"></p>
-</div>
-
-<script>
-    const SUPABASE_URL = "https://kbskmdtgwnagdigtdlze.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_AnwNz39_voG8r7XnjCG6Vg_75jK9Aa7";
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    window.addEventListener('DOMContentLoaded', async () => {
-        const claveGuardada = localStorage.getItem('mi_clave_licencia');
-        if (claveGuardada) {
-            document.getElementById('claveInput').value = claveGuardada;
-            await validarMiLicencia(claveGuardada, true); 
-        }
+async function licVerificar(clave){
+  const deviceId = licDeviceId();
+  let resp, data;
+  try{
+    resp = await fetch(`${LIC_SUPABASE_URL}/rest/v1/licencias?clave=eq.${encodeURIComponent(clave)}&select=*`, {
+      headers: { apikey: LIC_SUPABASE_KEY, Authorization: `Bearer ${LIC_SUPABASE_KEY}` }
     });
+    data = await resp.json();
+  } catch(e){
+    return { ok:false, motivo:"No se pudo conectar para verificar la licencia. Revisa tu conexión a internet e intenta de nuevo." };
+  }
+  if(!resp.ok || !Array.isArray(data)) return { ok:false, motivo:"No se pudo verificar la licencia. Intenta de nuevo." };
+  if(!data.length) return { ok:false, motivo:"Esa clave de licencia no existe." };
+  const lic = data[0];
+  if(!lic.activa) return { ok:false, motivo:"Esta licencia está desactivada." };
+  if(lic.dispositivo_id && lic.dispositivo_id !== deviceId){
+    return { ok:false, motivo:"Esta licencia ya está en uso en otro dispositivo." };
+  }
+  try{
+    await fetch(`${LIC_SUPABASE_URL}/rest/v1/licencias?clave=eq.${encodeURIComponent(clave)}`, {
+      method: "PATCH",
+      headers: {
+        apikey: LIC_SUPABASE_KEY, Authorization: `Bearer ${LIC_SUPABASE_KEY}`,
+        "Content-Type": "application/json", Prefer: "return=minimal"
+      },
+      body: JSON.stringify({ dispositivo_id: deviceId, ultima_conexion: new Date().toISOString() })
+    });
+  } catch(e){ /* si esto falla no bloqueamos el acceso, ya se confirmó que la licencia es válida */ }
+  return { ok:true };
+}
 
-    function obtenerHuellaDispositivo() {
-        const agente = navigator.userAgent;
-        const idioma = navigator.language;
-        const pantalla = `${screen.width}x${screen.height}`;
-        return btoa(`${agente}-${idioma}-${pantalla}`).slice(0, 32);
+function licPantalla(html){
+  document.body.innerHTML = `
+<div style="position:fixed;inset:0;z-index:99999;background:#1B2A4A;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;text-align:center;">
+${html}
+</div>`;
+}
+
+function licPedirClave(mensajeError){
+  licPantalla(`
+<div style="font-size:40px;margin-bottom:6px;">🔒</div>
+<h2 style="color:#fff;margin:0 0 6px;font-size:18px;">Licencia requerida</h2>
+<p style="color:#B9C2D6;font-size:13px;margin:0 0 16px;max-width:280px;">Ingresa la clave de licencia para usar esta app en este dispositivo.</p>
+${mensajeError ? `<p style="color:#F3A0A0;font-size:13px;margin:0 0 10px;max-width:280px;">${mensajeError}</p>` : ""}
+<input id="licClaveInput" type="text" placeholder="Clave de licencia" autocapitalize="off" autocorrect="off" style="width:240px;text-align:center;font-size:16px;padding:12px;border-radius:12px;border:none;margin-bottom:10px;">
+<button id="licEntrarBtn" style="width:240px;padding:12px;border-radius:12px;border:none;background:#C9973E;color:#1B2A4A;font-weight:700;font-size:15px;">Entrar</button>
+`);
+  const input = document.getElementById("licClaveInput");
+  const btn = document.getElementById("licEntrarBtn");
+  input.focus();
+  async function intentar(){
+    const clave = (input.value || "").trim();
+    if(!clave) return;
+    btn.disabled = true; btn.textContent = "Verificando…";
+    const r = await licVerificar(clave);
+    if(r.ok){
+      localStorage.setItem("jrp_licencia", clave);
+      render();
+      if(typeof autoSincronizarAlAbrir === "function") autoSincronizarAlAbrir();
+    } else {
+      btn.disabled = false; btn.textContent = "Entrar";
+      licPedirClave(r.motivo);
     }
+  }
+  btn.addEventListener("click", intentar);
+  input.addEventListener("keydown", function(e){ if(e.key === "Enter") intentar(); });
+}
 
-    async function validarMiLicencia(claveForzada = null, esSilencioso = false) {
-        const clave = claveForzada || document.getElementById('claveInput').value.trim();
-        const textoResultado = document.getElementById('resultado');
+async function licArrancar(){
+  const claveGuardada = localStorage.getItem("jrp_licencia");
+  if(!claveGuardada){ licPedirClave(); return; }
+  licPantalla(`<div style="font-size:40px;margin-bottom:6px;">🔒</div><p style="color:#B9C2D6;font-size:13px;">Verificando licencia…</p>`);
+  const r = await licVerificar(claveGuardada);
+  if(r.ok){
+    render();
+    if(typeof autoSincronizarAlAbrir === "function") autoSincronizarAlAbrir();
+  } else {
+    localStorage.removeItem("jrp_licencia");
+    licPedirClave(r.motivo);
+  }
+}
 
-        if (!clave) {
-            textoResultado.innerText = "Por favor, escribe una clave.";
-            textoResultado.style.color = "orange";
-            return;
-        }
-
-        if (!esSilencioso) {
-            textoResultado.innerText = "Verificando...";
-            textoResultado.style.color = "black";
-        }
-
-        const idDispositivo = obtenerHuellaDispositivo();
-
-        try {
-            const { data, error } = await supabase.rpc('verificar_licencia', {
-                p_clave: clave,
-                p_dispositivo: idDispositivo
-            });
-
-            if (error) throw error;
-
-            switch (data) {
-                case 'ok':
-                    textoResultado.innerText = "¡Licencia válida! Acceso concedido.";
-                    textoResultado.style.color = "green";
-                    localStorage.setItem('mi_clave_licencia', clave);
-                    break;
-                case 'invalida':
-                    textoResultado.innerText = "La clave no existe.";
-                    textoResultado.style.color = "red";
-                    localStorage.removeItem('mi_clave_licencia');
-                    break;
-                case 'inactiva':
-                    textoResultado.innerText = "Esta licencia ha sido desactivada.";
-                    textoResultado.style.color = "red";
-                    localStorage.removeItem('mi_clave_licencia');
-                    break;
-                case 'otro_dispositivo':
-                    textoResultado.innerText = "Esta clave ya está vinculada a otro dispositivo.";
-                    textoResultado.style.color = "red";
-                    localStorage.removeItem('mi_clave_licencia');
-                    break;
-                default:
-                    textoResultado.innerText = "Error desconocido.";
-                    textoResultado.style.color = "gray";
-            }
-        } catch (err) {
-            console.error(err);
-            textoResultado.innerText = "Error de conexión.";
-            textoResultado.style.color = "red";
-        }
-    }
+licArrancar();
 </script>
 </body>
 </html>
-
