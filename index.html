@@ -2897,12 +2897,15 @@ function viewTabbar(){
 })();
 
 // --- Licencia de un solo dispositivo, verificada contra Supabase ------------------
-// Antes de arrancar la app se pregunta a Supabase si la clave de licencia ingresada
-// existe, está activa, y si ya está "amarrada" a otro dispositivo. Cada dispositivo
-// se identifica con un ID aleatorio guardado en localStorage (no es información
-// personal, es solo un identificador técnico de este navegador/dispositivo).
+// Antes de arrancar la app se pregunta a Supabase (por medio de la función
+// verificar_licencia, protegida en el servidor) si la clave ingresada existe, está
+// activa, no venció, es del plan correcto (pro/beta) y no está en uso en otro
+// dispositivo. Cada dispositivo se identifica con un ID aleatorio guardado en
+// localStorage (no es información personal, solo un identificador técnico).
 const LIC_SUPABASE_URL = "https://kbskmdtgwnagdigtdlze.supabase.co";
 const LIC_SUPABASE_KEY = "sb_publishable_AnwNz39_voG8r7XnjCG6Vg_75jK9Aa7";
+const LIC_PLAN = "beta"; // esta copia del archivo solo acepta licencias del plan "beta"
+const LIC_DIAS_GRACIA = 30; // días que puede seguir usándose sin internet antes de exigir reconexión
 
 function licDeviceId(){
   let id = localStorage.getItem("jrp_device_id");
@@ -2913,62 +2916,38 @@ function licDeviceId(){
   return id;
 }
 
-// Días que se deja usar la app sin poder verificar la licencia (por ejemplo sin internet).
-const LIC_DIAS_GRACIA = 30;
-
-function licHeaders(extra){
-  // Las llaves nuevas de Supabase (sb_publishable_...) van solo en "apikey"; solo las llaves
-  // antiguas (JWT, empiezan con "eyJ") se mandan también como Authorization.
-  const h = Object.assign({ apikey: LIC_SUPABASE_KEY }, extra || {});
-  if(LIC_SUPABASE_KEY.indexOf("eyJ") === 0) h.Authorization = "Bearer " + LIC_SUPABASE_KEY;
-  return h;
-}
-
 async function licVerificar(clave){
   const deviceId = licDeviceId();
-  let resp, data;
-  const ctrl = new AbortController();
-  const corte = setTimeout(function(){ ctrl.abort(); }, 12000);   // que nunca se quede colgado
+  let data;
   try{
-    // Ya no se lee la tabla "licencias" directamente (queda cerrada con RLS): se llama a la
-    // función verificar_licencia, la única puerta permitida. Ella revisa todo del lado del
-    // servidor y responde solo 'ok' / 'invalida' / 'inactiva' / 'otro_dispositivo'.
-    resp = await fetch(`${LIC_SUPABASE_URL}/rest/v1/rpc/verificar_licencia`, {
+    const resp = await fetch(`${LIC_SUPABASE_URL}/rest/v1/rpc/verificar_licencia`, {
       method: "POST",
-      headers: licHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify({ p_clave: clave, p_dispositivo: deviceId }),
-      signal: ctrl.signal
+      headers: {
+        "Content-Type": "application/json",
+        apikey: LIC_SUPABASE_KEY,
+        Authorization: `Bearer ${LIC_SUPABASE_KEY}`
+      },
+      body: JSON.stringify({ p_clave: clave, p_dispositivo: deviceId, p_plan: LIC_PLAN })
     });
+    if(!resp.ok) throw new Error("http " + resp.status);
     data = await resp.json();
   } catch(e){
-    clearTimeout(corte);
     return { ok:false, red:true, motivo:"No se pudo conectar para verificar la licencia. Revisa tu conexión a internet e intenta de nuevo." };
   }
-  clearTimeout(corte);
-  if(!resp.ok || typeof data !== "string") return { ok:false, red:true, motivo:"No se pudo verificar la licencia. Intenta de nuevo." };
   if(data === "ok") return { ok:true };
   if(data === "invalida") return { ok:false, motivo:"Esa clave de licencia no existe." };
   if(data === "inactiva") return { ok:false, motivo:"Esta licencia está desactivada." };
   if(data === "vencida") return { ok:false, motivo:"Esta licencia venció. Contacta al proveedor de la app para renovarla." };
   if(data === "otro_dispositivo") return { ok:false, motivo:"Esta licencia ya está en uso en otro dispositivo." };
+  if(data === "producto_incorrecto") return { ok:false, motivo:"Esa clave no es para esta versión de la app." };
   return { ok:false, red:true, motivo:"No se pudo verificar la licencia. Intenta de nuevo." };
 }
 
 function licPantalla(html){
-  let ov = document.getElementById("lic-overlay");
-  if(!ov){ ov = document.createElement("div"); ov.id = "lic-overlay"; document.body.appendChild(ov); }
-  ov.style.cssText = "position:fixed;inset:0;z-index:99999;background:#1B2A4A;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;text-align:center;";
-  ov.innerHTML = html;
-}
-function licQuitarPantalla(){
-  const ov = document.getElementById("lic-overlay");
-  if(ov) ov.remove();
-}
-function licAbrirApp(){
-  try{ localStorage.setItem("jrp_licencia_ok", String(Date.now())); }catch(e){}
-  licQuitarPantalla();
-  render();
-  if(typeof autoSincronizarAlAbrir === "function") autoSincronizarAlAbrir();
+  document.body.innerHTML = `
+<div style="position:fixed;inset:0;z-index:99999;background:#1B2A4A;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;text-align:center;">
+${html}
+</div>`;
 }
 
 function licPedirClave(mensajeError){
@@ -2990,7 +2969,9 @@ ${mensajeError ? `<p style="color:#F3A0A0;font-size:13px;margin:0 0 10px;max-wid
     const r = await licVerificar(clave);
     if(r.ok){
       localStorage.setItem("jrp_licencia", clave);
-      licAbrirApp();
+      localStorage.setItem("jrp_licencia_ok_ts", String(Date.now()));
+      render();
+      if(typeof autoSincronizarAlAbrir === "function") autoSincronizarAlAbrir();
     } else {
       btn.disabled = false; btn.textContent = "Entrar";
       licPedirClave(r.motivo);
@@ -3005,21 +2986,26 @@ async function licArrancar(){
   if(!claveGuardada){ licPedirClave(); return; }
   licPantalla(`<div style="font-size:40px;margin-bottom:6px;">🔒</div><p style="color:#B9C2D6;font-size:13px;">Verificando licencia…</p>`);
   const r = await licVerificar(claveGuardada);
-  if(r.ok){ licAbrirApp(); return; }
-  if(r.red){
-    // Sin internet o Supabase no responde: NO se borra la licencia guardada. Si se verificó
-    // hace menos de LIC_DIAS_GRACIA días, se deja entrar (la app funciona sin conexión).
-    const ultima = Number(localStorage.getItem("jrp_licencia_ok")) || 0;
-    if(!ultima){ try{ localStorage.setItem("jrp_licencia_ok", String(Date.now())); }catch(e){} }
-    if(!ultima || (Date.now() - ultima) < LIC_DIAS_GRACIA*24*3600*1000){
-      licQuitarPantalla(); render();
-      if(typeof autoSincronizarAlAbrir === "function") autoSincronizarAlAbrir();
-      return;
-    }
-    licPedirClave("Hace más de " + LIC_DIAS_GRACIA + " días que no se verifica la licencia. Conéctate a internet para continuar.");
+  if(r.ok){
+    localStorage.setItem("jrp_licencia_ok_ts", String(Date.now()));
+    render();
+    if(typeof autoSincronizarAlAbrir === "function") autoSincronizarAlAbrir();
     return;
   }
-  // Respuesta definitiva del servidor (no existe / desactivada / otro dispositivo)
+  if(r.red){
+    // No se pudo conectar: si se validó bien hace poco, se deja seguir trabajando sin
+    // internet dentro de un margen de días; pasado ese margen, hace falta conexión.
+    const ultimaOk = Number(localStorage.getItem("jrp_licencia_ok_ts") || 0);
+    const diasSinValidar = (Date.now() - ultimaOk) / (1000*60*60*24);
+    if(ultimaOk && diasSinValidar < LIC_DIAS_GRACIA){
+      render();
+      return;
+    }
+    licPedirClave(r.motivo);
+    return;
+  }
+  // Respuesta definitiva del servidor (no es un problema de conexión): se borra la
+  // clave guardada y se vuelve a pedir, mostrando el motivo real.
   localStorage.removeItem("jrp_licencia");
   licPedirClave(r.motivo);
 }
