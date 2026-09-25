@@ -23,7 +23,7 @@
   #pull-refresh-indicator .spin{width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:pr-spin .7s linear infinite;}
   @keyframes pr-spin{to{transform:rotate(360deg);}}
   #app{max-width:420px;margin:0 auto;min-height:100vh;position:relative;padding-bottom:70px;background:var(--cream);}
-  header{background:var(--navy);padding:calc(20px + env(safe-area-inset-top)) 16px 16px;}
+  header{background:var(--navy);padding:calc(20px + env(safe-area-inset-top)) 16px 16px;position:sticky;top:0;z-index:400;}
   header p{color:var(--gold);font-weight:700;font-size:11px;margin:0 0 2px;letter-spacing:.04em;}
   header h1{color:#fff;font-size:19px;margin:0;font-weight:600;}
   .content{padding:16px;}
@@ -92,6 +92,8 @@
   .searchbar input{border:none;padding:0;flex:1;font-size:15px;background:transparent;outline:none;box-shadow:none;color:#222;min-width:0;-webkit-appearance:none;appearance:none;}
   .searchbar input::-webkit-search-decoration,.searchbar input::-webkit-search-cancel-button,.searchbar input::-webkit-search-results-button,.searchbar input::-webkit-search-results-decoration{display:none;-webkit-appearance:none;}
   .toprow{display:flex;gap:8px;margin-bottom:16px;}
+  /* Buscador fijo: se queda pegado debajo del encabezado al desplazarse por la lista (igual que en la app Pro) */
+  .toprow.buscador{position:sticky;top:calc(var(--header-h,78px) - 1px);z-index:390;background:var(--cream);margin:-16px -16px 12px;padding:10px 16px;box-shadow:0 5px 8px -7px rgba(0,0,0,.28);}
   .iconbtn{background:var(--navy);color:#fff;border:none;border-radius:10px;width:40px;flex-shrink:0;}
   .flexrow{display:flex;gap:8px;}
   .hint{font-size:12px;color:#aaa;margin-top:6px;}
@@ -1023,7 +1025,17 @@ function render(){
   }
   window.scrollTo(0, scrollY);
   document.title = nombreNegocio();
+  medirEncabezado();
 }
+// Mide la altura real del encabezado (que ahora queda fijo/sticky arriba) para que el
+// buscador fijo (.toprow.buscador) sepa exactamente debajo de dónde pegarse — la altura
+// del encabezado varía según el celular (notch, barra de estado, etc.), así que se mide
+// ya insertado en la pantalla en vez de adivinarla.
+function medirEncabezado(){
+  const h = document.querySelector("#app header");
+  if(h && h.offsetHeight > 0) document.documentElement.style.setProperty("--header-h", h.offsetHeight + "px");
+}
+window.addEventListener("resize", medirEncabezado);
 
 function exportarDatos(){
   const payload = { clientes: state.clientes, prestamos: state.prestamos, config: state.config, exportado: new Date().toISOString() };
@@ -1614,7 +1626,7 @@ function viewAjustes(){
 }
 
 function viewClientes(){
-  let html = `<div class="toprow">
+  let html = `<div class="toprow buscador">
     <input id="f_buscarCliente" type="text" name="q" placeholder="Buscar cliente" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="flex:1;" value="${state.q}" oninput="state.q=this.value; filtrarListaClientes();">
     <button class="iconbtn" onclick="abrirFormCliente(null)">+</button>
   </div>`;
@@ -1742,7 +1754,7 @@ function viewPrestamos(){
   if(state.vista==="cartera") return viewCartera();
   if(state.vista==="refinanciar") return viewRefinanciar();
 
-  let html = `<div class="toprow">
+  let html = `<div class="toprow buscador">
     <input id="f_buscarPrestamo" type="text" name="q" placeholder="Buscar préstamo (código o cliente)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="flex:1;" value="${state.qPrestamos||""}" oninput="state.qPrestamos=this.value; filtrarListaPrestamos();">
     <button class="iconbtn" onclick="abrirNuevoPrestamo()">+</button>
   </div>
@@ -2701,83 +2713,96 @@ function eliminarPrestamo(id){
 
 function viewPagos(){
   if(state.vista==="recibo") return viewRecibo();
-  // Agrupado por préstamo (en vez de una sola lista mezclada) para poder revisar, préstamo
-  // por préstamo, si lo cobrado cuadra con lo prestado — cada tarjeta es desplegable y trae
-  // su propio subtotal arriba, junto al capital prestado neto y el capital pendiente actual
-  // de ESE préstamo, para comparar los tres números uno al lado del otro. Los pagos vigentes
-  // y los de antes de una modificación se muestran en DOS bloques separados y con su propio
-  // encabezado (no mezclados en una sola lista), para que sea imposible no darse cuenta de
-  // si un préstamo tiene o no pagos archivados.
-  const grupos = state.prestamos.map(p=>{
-    const cli = state.clientes.find(c=>c.id===p.clienteId);
-    const r = resumen(p);
-    const vigentes = (p.pagos||[]).map(pg=>({...pg, prestamoId:p.id}))
-      .sort((a,b)=> new Date(b.fecha)-new Date(a.fecha));
-    const previos = pagosArchivados(p).map(pg=>({...pg, prestamoId:p.id}))
-      .sort((a,b)=> new Date(b.fecha)-new Date(a.fecha));
-    const totalVigentes = vigentes.reduce((s,pg)=>s+(Number(pg.monto)||0)+(Number(pg.mora)||0),0);
-    const totalPrevios = previos.reduce((s,pg)=>s+(Number(pg.monto)||0)+(Number(pg.mora)||0),0);
-    const nMods = (p.historialModificaciones||[]).length;
-    const todos = vigentes.concat(previos);
-    return {
-      p, cli, vigentes, previos, nMods, totalVigentes, totalPrevios,
-      totalCobrado: totalVigentes + totalPrevios,
-      capitalNeto: capitalDesembolsadoNeto(p),
-      capitalPendiente: r.capitalPendiente||0,
-      ultimaFecha: todos.length ? todos.map(pg=>pg.fecha).sort().reverse()[0] : p.fechaInicio
-    };
-  }).filter(g => g.vigentes.length>0 || g.previos.length>0);
-  // Solo se listan los préstamos que SÍ tienen algún pago (vigente o archivado) — los que
-  // todavía no tienen ningún pago registrado no aparecen aquí, ya que no hay nada que
-  // mostrar; siguen viéndose igual dentro del detalle de cada préstamo.
-  if(grupos.length===0) return `<p class="empty">Todavía no se ha registrado ningún pago.</p>`;
-  grupos.sort((a,b)=> new Date(b.ultimaFecha)-new Date(a.ultimaFecha));
-  const filaVigente = (pg)=>{
-    const total = (Number(pg.monto)||0) + (Number(pg.mora)||0);
-    let sub = fmtDate(pg.fecha);
-    if(pg.liquidacion) sub += " · Liquidación anticipada";
-    else if(pg.tipo==="enganche") sub += " · Enganche al refinanciar";
-    else if(pg.mora>0) sub += ` · incluye mora ${money(pg.mora)}`;
+  // Una tarjeta POR PRÉSTAMO (no por cliente) — así cada una trae su propio resumen de
+  // capital prestado/pendiente/cobrado, igual que se ve en el detalle de ese préstamo
+  // (mismo método que usa la app Pro).
+  const prestamosConMovs = state.prestamos.filter(p =>
+    (p.pagos&&p.pagos.length) || pagosArchivados(p).length>0
+  );
+  if(prestamosConMovs.length===0) return `<p class="empty">Todavía no se ha registrado ningún pago.</p>`;
+
+  // Un cobro con abono a capital queda guardado como DOS registros en p.pagos (la cuota y
+  // el abono, enlazados por pagoCuota.abonoId / pagoAbono.cuotaId) para poder desglosar la
+  // tabla de amortización — pero de cara al usuario es UN solo cobro. buscarLigado()
+  // encuentra la otra mitad (en el mismo arreglo que se está listando: vigentes o
+  // archivados) para fusionar ambas en una sola tarjeta con un solo recibo.
+  const buscarLigado = (lista, pg)=>{
+    const idLigado = pg.abonoId || (pg.tipo==="abono_capital" ? pg.cuotaId : null);
+    return idLigado ? lista.find(x=>x.id===idLigado) : null;
+  };
+  const notaPago = (pg, abonoLigado)=>{
+    let nota = "";
+    if(pg.tipo==="enganche") nota = "Enganche al refinanciar";
+    else if(pg.liquidacion) nota = "Liquidación anticipada";
+    else if(pg.tipo==="abono_capital") nota = "Abono a capital";
+    else if(pg.mora>0) nota = `Incluye mora ${money(pg.mora)}`;
+    if(abonoLigado) nota += (nota?" · ":"")+`incluye abono a capital de ${money(abonoLigado.monto)}`;
+    return nota;
+  };
+  const filaPago = (p, pg, lista, conBorrar)=>{
+    // Las filas de tipo abono_capital que ya se muestran fusionadas dentro de la cuota que
+    // las originó no se dibujan aparte, para no duplicar la tarjeta (y el botón de recibo).
+    if(pg.tipo==="abono_capital" && pg.cuotaId && buscarLigado(lista, pg)) return "";
+    const abonoLigado = buscarLigado(lista, pg);
+    const total = (Number(pg.monto)||0) + (Number(pg.mora)||0) + (abonoLigado ? (Number(abonoLigado.monto)||0) : 0);
+    const nota = notaPago(pg, abonoLigado && pg.tipo!=="abono_capital" ? abonoLigado : null);
     return `<div class="row-card">
-      <div style="cursor:pointer;" onclick="verRecibo('${pg.prestamoId}','${pg.id||""}')"><p class="name">${money(total)}</p><p class="sub">${sub}</p></div>
+      <div style="cursor:pointer;" onclick="verRecibo('${p.id}','${pg.id||""}')">
+        <p class="name">${money(total)}</p>
+        <p class="sub">${fmtDate(pg.fecha)}${nota?" · "+nota:""}</p>
+      </div>
       <div style="text-align:right;display:flex;align-items:center;gap:6px;">
-        <button class="printbtn" title="Ver recibo" onclick="verRecibo('${pg.prestamoId}','${pg.id||""}')">🧾</button>
-        <button class="printbtn" title="Eliminar pago" onclick="eliminarPago('${pg.prestamoId}','${pg.id||""}')">🗑</button>
+        <button class="printbtn" title="Ver recibo" onclick="verRecibo('${p.id}','${pg.id||""}')">🧾</button>
+        ${conBorrar?`<button class="printbtn" title="Eliminar pago" onclick="eliminarPago('${p.id}','${pg.id||""}')">🗑</button>`:""}
       </div>
     </div>`;
   };
-  const filaPrevia = (pg)=>{
-    const total = (Number(pg.monto)||0) + (Number(pg.mora)||0);
-    let sub = fmtDate(pg.fecha);
-    if(pg.liquidacion) sub += " · Liquidación anticipada";
-    else if(pg.tipo==="enganche") sub += " · Enganche al refinanciar";
-    else if(pg.mora>0) sub += ` · incluye mora ${money(pg.mora)}`;
-    return `<div class="row-card" style="opacity:.7;">
-      <div><p class="name">${money(total)}</p><p class="sub">${sub}</p></div>
-    </div>`;
+  const filaVigente = (p, pg, lista)=> filaPago(p, pg, lista, true);
+  const filaArchivada = (p, pg, lista)=> filaPago(p, pg, lista, false);
+
+  const fechaMasReciente = (p)=>{
+    const fechas = [...(p.pagos||[]).map(pg=>pg.fecha), ...pagosArchivados(p).map(pg=>pg.fecha)];
+    return fechas.length ? fechas.sort().slice(-1)[0] : "";
   };
-  return grupos.map(g=>{
-    const nTotal = g.vigentes.length + g.previos.length;
+  prestamosConMovs.sort((a,b)=> fechaMasReciente(b).localeCompare(fechaMasReciente(a)));
+
+  const tarjetas = prestamosConMovs.map(p=>{
+    const cli = state.clientes.find(c=>c.id===p.clienteId);
+    const nombre = cli?cli.nombre:"—";
+    const r = resumen(p);
+
+    const vigentes = (p.pagos||[]).slice().sort((a,b)=> new Date(b.fecha)-new Date(a.fecha));
+    const totalVigente = vigentes.reduce((s,pg)=>s+(Number(pg.monto)||0)+(Number(pg.mora)||0),0);
+
+    const archivados = pagosArchivados(p).slice().sort((a,b)=> new Date(b.fecha)-new Date(a.fecha));
+    const totalArchivado = archivados.reduce((s,pg)=>s+(Number(pg.monto)||0)+(Number(pg.mora)||0),0);
+
+    const totalGeneral = totalVigente + totalArchivado;
+    const numModificaciones = (p.historialModificaciones||[]).length;
+    // Cuenta transacciones reales, no registros: un cobro con abono a capital son 2
+    // registros en el arreglo pero 1 sola transacción (misma cuenta que ve el usuario en la
+    // lista de abajo, ya fusionada).
+    const contarTransacciones = (lista)=> lista.filter(pg=> !(pg.tipo==="abono_capital" && pg.cuotaId && buscarLigado(lista,pg))).length;
+    const numPagosTotal = contarTransacciones(vigentes) + contarTransacciones(archivados);
+
     return `<details class="row-card">
       <summary>
-        <div><p class="name">${g.cli?g.cli.nombre:"—"}</p><p class="sub">${g.p.codigo} · ${nTotal} pago${nTotal===1?"":"s"}${g.nMods>0?` · ${g.nMods} modificación${g.nMods===1?"":"es"}`:""}</p></div>
-        <p style="font-size:15px;font-weight:600;color:#3B6D11;margin:0;">${money(g.totalCobrado)}</p>
+        <div><p class="name">${nombre}</p><p class="sub">${p.codigo} · ${numPagosTotal} pago${numPagosTotal===1?"":"s"}${numModificaciones>0?` · ${numModificaciones} modificación${numModificaciones===1?"":"es"}`:""}</p></div>
+        <p style="font-size:15px;font-weight:600;color:#3B6D11;margin:0;">${money(totalGeneral)}</p>
       </summary>
       <div class="cuerpo">
         <div class="mini-stats">
-          <div><p class="lbl">Capital prestado (neto)</p><p class="val">${money(g.capitalNeto)}</p></div>
-          <div><p class="lbl">Capital pendiente hoy</p><p class="val">${money(g.capitalPendiente)}</p></div>
-          <div><p class="lbl">Total cobrado</p><p class="val">${money(g.totalCobrado)}</p></div>
+          <div><p class="lbl">Capital prestado (neto)</p><p class="val">${money(capitalDesembolsadoNeto(p))}</p></div>
+          <div><p class="lbl">Capital pendiente hoy</p><p class="val">${money(r.capitalPendiente||0)}</p></div>
+          <div><p class="lbl">Total cobrado</p><p class="val">${money(totalGeneral)}</p></div>
         </div>
-        <p class="sub" style="font-weight:600;margin:0 0 6px;">Pagos vigentes (${g.vigentes.length}) · ${money(g.totalVigentes)}</p>
-        ${g.vigentes.length ? g.vigentes.map(filaVigente).join("") : `<p class="empty" style="padding:8px 0;">Sin pagos vigentes.</p>`}
-        ${g.nMods>0 ? `
-        <p class="sub" style="font-weight:600;margin:14px 0 6px;">De antes de modificar (${g.previos.length})</p>
-        ${g.previos.length ? g.previos.map(filaPrevia).join("") : `<p class="empty" style="padding:8px 0;">Este préstamo tiene ${g.nMods} modificación(es) registrada(s), pero no hay pagos archivados de antes (no se había cobrado nada todavía cuando se modificó).</p>`}
-        ` : ""}
+        ${vigentes.length ? `<p class="sub" style="font-weight:600;margin:0 0 6px;">Pagos vigentes (${vigentes.length}) · ${money(totalVigente)}</p>${vigentes.map(pg=>filaVigente(p,pg,vigentes)).join("")}` : `<p class="empty" style="padding:8px 0;">Sin pagos vigentes.</p>`}
+        ${archivados.length ? `<p class="sub" style="font-weight:600;margin:14px 0 6px;">De antes de modificar (${archivados.length})</p>${archivados.map(pg=>filaArchivada(p,pg,archivados)).join("")}` : ""}
       </div>
     </details>`;
-  }).join("");
+  });
+
+  return tarjetas.join("");
 }
 function eliminarPago(prestamoId, pagoId){
   const p = state.prestamos.find(x=>x.id===prestamoId);
