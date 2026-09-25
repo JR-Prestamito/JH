@@ -2566,10 +2566,21 @@ function registrarPago(id){
   );
   if(!ok) return;
   p.pagos = p.pagos || [];
-  p.pagos.push({ id:uid(), fecha:fechaPago, monto:montoCuota, mora, tipo:"cuota" });
+  const pagoCuota = { id:uid(), fecha:fechaPago, monto:montoCuota, mora, tipo:"cuota" };
+  // Reparte lo que corresponde a esta cuota entre interés y capital, comparando el reparto
+  // acumulado del préstamo antes y después de este pago (misma lógica que la app Pro), para
+  // poder mostrar "Interés" y "Capital" por separado en el recibo, no solo el total.
+  const repartoAntes = desglosePagado(p);
+  p.pagos.push(pagoCuota);
+  const repartoDespues = desglosePagado(p);
+  pagoCuota.interes = round2(Math.max(0, Math.min(montoCuota, repartoDespues.interes - repartoAntes.interes)));
+  pagoCuota.capital = round2(montoCuota - pagoCuota.interes);
   if(excedente > 0.01){
     const idAbono = uid();
-    p.pagos.push({ id:idAbono, fecha:fechaPago, monto:excedente, mora:0, tipo:"abono_capital" });
+    // Se enlazan los dos pagos entre sí (mismo cobro, misma fecha) para que el recibo los
+    // pueda mostrar juntos como una sola transacción, en vez de dos recibos sueltos.
+    pagoCuota.abonoId = idAbono;
+    p.pagos.push({ id:idAbono, fecha:fechaPago, monto:excedente, mora:0, tipo:"abono_capital", interes:0, capital:excedente, cuotaId:pagoCuota.id });
     // Registrar el abono como un ajuste real de saldo (no solo un pago más), para que
     // generarTablaDinamica() recalcule cuota/plazo según el método a partir de aquí. Si el
     // abono alcanza para cubrir todo el saldo pendiente, se marca como liquidado.
@@ -2625,7 +2636,7 @@ function liquidarAnticipado(id){
   );
   if(!ok) return;
   p.pagos = p.pagos || [];
-  p.pagos.push({ id:uid(), fecha:fechaLiq, monto:total, mora:0, liquidacion:true });
+  p.pagos.push({ id:uid(), fecha:fechaLiq, monto:total, mora:0, liquidacion:true, interes: round2(interes), capital: round2(capitalPendiente) });
   p.liquidadoAnticipado = true;
   save(); render();
 }
@@ -2806,6 +2817,27 @@ function verRecibo(prestamoId, pagoId){
   state.reciboSel = { prestamoId, pagoId };
   render();
 }
+function buscarPagoPorId(p, id){
+  if(!id) return null;
+  const enPagos = (p.pagos||[]).find(x=>x.id===id);
+  if(enPagos) return enPagos;
+  for(const m of (p.historialModificaciones||[])){
+    const enc = (m.pagosPrevios||[]).find(x=>x.id===id);
+    if(enc) return enc;
+  }
+  return null;
+}
+// Si un pago de cuota tuvo también un abono a capital el mismo cobro (o viceversa), se
+// resuelve siempre hacia el lado de la cuota y se devuelve el abono ligado aparte, para
+// mostrar las dos partes juntas en un solo recibo en vez de dos recibos sueltos.
+function resolverPagoRecibo(p, pg){
+  if(pg.tipo==="abono_capital" && pg.cuotaId){
+    const cuotaLigada = buscarPagoPorId(p, pg.cuotaId);
+    if(cuotaLigada) pg = cuotaLigada;
+  }
+  const abonoLigado = pg.abonoId ? buscarPagoPorId(p, pg.abonoId) : null;
+  return { pg, abonoLigado };
+}
 function viewRecibo(){
   const sel = state.reciboSel || {};
   const p = state.prestamos.find(x=>x.id===sel.prestamoId);
@@ -2813,12 +2845,16 @@ function viewRecibo(){
   const cli = state.clientes.find(c=>c.id===p.clienteId);
   const pagos = p.pagos || [];
   const idx = sel.pagoId ? pagos.findIndex(pg=>pg.id===sel.pagoId) : -1;
-  const pg = idx>=0 ? pagos[idx] : pagos[pagos.length-1];
-  if(!pg){ state.vista="lista"; return viewPagos(); }
+  const pg0 = idx>=0 ? pagos[idx] : pagos[pagos.length-1];
+  if(!pg0){ state.vista="lista"; return viewPagos(); }
+  const resuelto = resolverPagoRecibo(p, pg0);
+  const pg = resuelto.pg;
+  const abonoLigado = resuelto.abonoLigado;
   const numRecibo = pg.id ? pg.id.slice(-6).toUpperCase() : String(idx+1).padStart(4,"0");
-  const totalPago = (Number(pg.monto)||0) + (Number(pg.mora)||0);
+  const totalPago = (Number(pg.monto)||0) + (Number(pg.mora)||0) + (abonoLigado ? (Number(abonoLigado.monto)||0) : 0);
   const r = resumen(p);
   let concepto = pg.liquidacion ? "Liquidación anticipada" : (pg.tipo==="enganche" ? "Enganche al refinanciar" : (pg.mora>0 ? "Cuota + mora por atraso" : "Abono / cuota"));
+  if(abonoLigado) concepto += " + abono a capital";
 
   return `
     <div id="recibo-imprimible">
@@ -2831,8 +2867,15 @@ function viewRecibo(){
       <div class="rline"><span>Préstamo</span><b>${p.codigo}</b></div>
       <div class="rline"><span>Método</span><b>${p.metodo}</b></div>
       <div class="rline"><span>Concepto</span><b>${concepto}</b></div>
-      ${pg.mora>0 ? `<div class="rline"><span>Cuota / abono</span><b>${money(pg.monto)}</b></div>
-      <div class="rline"><span>Mora</span><b>${money(pg.mora)}</b></div>` : ""}
+      ${pg.interes!=null && pg.capital!=null && pg.tipo!=="abono_capital" ? `
+      <div class="rline"><span>Cuota</span><b>${money(pg.monto)}</b></div>
+      ${pg.interes>0 ? `<div class="rline" style="padding-left:14px;color:#666;"><span>· Interés</span><span>${money(pg.interes)}</span></div>` : ""}
+      ${pg.capital>0 ? `<div class="rline" style="padding-left:14px;color:#666;"><span>· Capital</span><span>${money(pg.capital)}</span></div>` : ""}
+      ${abonoLigado ? `<div class="rline"><span>Abono a capital</span><b>${money(abonoLigado.monto)}</b></div>` : ""}
+      ${pg.mora>0 ? `<div class="rline"><span>Mora</span><b>${money(pg.mora)}</b></div>` : ""}
+      ` : (pg.tipo==="abono_capital" ? `<div class="rline"><span>Abono a capital</span><b>${money(pg.monto)}</b></div>` :
+      (pg.mora>0 ? `<div class="rline"><span>Cuota / abono</span><b>${money(pg.monto)}</b></div>
+      <div class="rline"><span>Mora</span><b>${money(pg.mora)}</b></div>` : ""))}
       <div class="rline rtotal" style="border-bottom:none;padding-top:14px;"><span>Total pagado</span><span>${money(totalPago)}</span></div>
       <div class="rline"><span>Saldo pendiente actual del préstamo</span><b>${money(r.saldoPendiente)}</b></div>
       <p class="hint" style="margin-top:18px;">Gracias por su pago.</p>
