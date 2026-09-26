@@ -1200,37 +1200,104 @@ function abrirEstadoResultados(){
   state.vista = "estadoResultados";
   render();
 }
-function viewEstadoResultados(){
-  let interesesCobrados=0, capitalCobrado=0, moraCobrada=0, enganches=0, desembolsos=0, cobradoArchivado=0, gananciaPerdidaModificaciones=0;
-  state.prestamos.forEach(p=>{
+// Reparte los cobros hechos ANTES de cada modificación "no sustancial" (los que quedaron
+// archivados, ver pagosArchivados) entre interés, capital, abonos a capital, mora y enganche
+// — mismo método que usa la app Pro (desgloseCobrosArchivados), para que esos cobros viejos
+// se sumen con los vigentes en una sola cifra por concepto, en vez de aparecer aparte como
+// un "saldo antes de modificaciones" sin desglosar.
+// - Mora, enganche y abonos a capital salen EXACTOS (cada pago ya trae su tipo y su mora).
+// - Interés vs. capital: si TODOS los pagos del grupo traen el reparto guardado (interes/capital,
+//   que se guarda al registrar el pago) se usa tal cual; si no, se ESTIMA reconstruyendo el
+//   préstamo como era antes de modificarse (capital, tasa, método, cuotas y fecha anteriores).
+// Siempre se cumple: interes + capital + mora + enganche = lo cobrado (monto + mora) de esos pagos.
+function desgloseCobrosArchivados(p){
+  const res = { interes:0, capital:0, abonos:0, mora:0, enganche:0, estimado:false };
+  // Igual que pagosArchivados(): normalmente todo vive en p.historialModificaciones, pero se
+  // fusiona con el nombre viejo p.modificaciones (sin duplicar) por si algún dato no migró.
+  const historial = (p.historialModificaciones || []).slice();
+  (p.modificaciones||[]).forEach(mVieja=>{
+    const yaExiste = historial.some(mNueva=> mNueva.fecha===mVieja.fecha && mNueva.capitalAnterior===mVieja.capitalAnterior);
+    if(!yaExiste) historial.push(mVieja);
+  });
+  historial.forEach(function(m, idx){
+    const pagos = m.pagosPrevios || [];
+    if(!pagos.length) return;
+    const num = function(x){ return Number(x)||0; };
+    pagos.forEach(function(pg){
+      res.mora += num(pg.mora);
+      if(pg.tipo==="enganche") res.enganche += num(pg.monto);
+    });
+    const cuotasYAbonos = pagos.filter(function(pg){ return pg.tipo!=="enganche"; });
+    res.abonos += cuotasYAbonos.filter(function(pg){ return pg.tipo==="abono_capital"; }).reduce(function(s,pg){ return s+num(pg.monto); },0);
+    const totalG = cuotasYAbonos.reduce(function(s,pg){ return s+num(pg.monto); },0);
+    let i = 0, c = 0;
+    if(cuotasYAbonos.length && cuotasYAbonos.every(function(pg){ return pg.interes!==undefined && pg.capital!==undefined; })){
+      cuotasYAbonos.forEach(function(pg){ i += num(pg.interes); c += num(pg.capital); });
+    } else if(cuotasYAbonos.length){
+      res.estimado = true;
+      try{
+        const previo = Object.assign({}, p, {
+          id: p.id+"_previo"+idx, capital:m.capitalAnterior, tasa:m.tasaAnterior, periodo:m.periodoAnterior,
+          metodo:m.metodoAnterior, cuotas:m.cuotasAnterior, fechaInicio:m.fechaInicioAnterior||p.fechaInicio,
+          pagos:pagos, ajustesCapital:m.ajustesPrevios||[], historialModificaciones:[], modificaciones:[], liquidadoAnticipado:false
+        });
+        const d = desglosePagado(previo); i = d.interes; c = d.capital;
+      }catch(e){ i = 0; c = 0; }
+      // Lo que la tabla no alcance a repartir se deja como capital, para que el total nunca cambie.
+      c += totalG - (i + c);
+    }
+    res.interes += i; res.capital += c;
+  });
+  return res;
+}
+// El enganche VIGENTE (todavía en p.pagos, no archivado por una modificación posterior) se
+// excluye a propósito del reparto interés/capital en desglosePagado (no es ninguna de las
+// dos cosas) — se suma aparte aquí para no perderlo del renglón de ingresos.
+function enganchesDe(p){
+  return (p.pagos||[]).filter(pg=>pg.tipo==="enganche").reduce((s,pg)=>s+(Number(pg.monto)||0),0);
+}
+// Totales de ingresos cobrados de TODOS los préstamos (cobros vigentes + archivados), ya
+// unificados por concepto — mismo método que usa la app Pro (desgloseIngresosCobrados),
+// para que el Estado de resultados no tenga que mostrar una línea aparte de "cobrado antes
+// de modificaciones" sin desglosar: ese dinero entra a los mismos totales de siempre.
+// "capital" = todo el capital cobrado (cuotas + abonos a capital); "abonos" es la parte que
+// vino de abonos extra, y "capitalCuotas" el resto (lo que trae cada cuota).
+function desgloseIngresosCobrados(){
+  const t = { intereses:0, capital:0, abonos:0, capitalCuotas:0, mora:0, enganches:0, hayEstimado:false };
+  state.prestamos.forEach(function(p){
     const d = desglosePagado(p);
-    interesesCobrados += d.interes;
-    capitalCobrado += d.capital;
-    moraCobrada += (p.pagos||[]).reduce((s,pg)=>s+(Number(pg.mora)||0),0);
-    // El enganche VIGENTE (el que sigue en p.pagos, todavía no archivado por una modificación
-    // posterior) no pasa por desglosePagado -- se excluye a propósito del reparto
-    // interés/capital, porque no es ninguna de las dos cosas -- así que se suma aparte aquí.
-    // OJO: no se recorre p.historialModificaciones para sumar enganches de modificaciones
-    // viejas, porque esos ya quedaron adentro de pagosArchivados(p) (cobradoArchivado más
-    // abajo) en el momento en que se archivaron -- sumarlos también aquí los duplicaría.
-    enganches += (p.pagos||[]).filter(pg=>pg.tipo==="enganche").reduce((s,pg)=>s+(Number(pg.monto)||0),0);
-    // Los pagos hechos antes de una modificación "no sustancial" quedaron archivados bajo
-    // un cronograma que ya no existe, así que no se intenta repartir entre interés/capital
-    // (sería una separación artificial) — se suman aquí en una sola línea, para que el
-    // total de ingresos siga reflejando toda la plata que de verdad entró.
-    cobradoArchivado += pagosArchivados(p).reduce((s,pg)=>s+(Number(pg.monto)||0)+(Number(pg.mora)||0),0);
+    const a = desgloseCobrosArchivados(p);
+    const pagos = p.pagos || [];
+    t.intereses += d.interes + a.interes;
+    t.capital += d.capital + a.capital;
+    t.abonos += pagos.filter(function(pg){ return pg.tipo==="abono_capital"; }).reduce(function(s,pg){ return s+(Number(pg.monto)||0); },0) + a.abonos;
+    t.mora += pagos.reduce(function(s,pg){ return s+(Number(pg.mora)||0); },0) + a.mora;
+    t.enganches += enganchesDe(p) + a.enganche;
+    if(a.estimado) t.hayEstimado = true;
+  });
+  t.capitalCuotas = t.capital - t.abonos;
+  return t;
+}
+function viewEstadoResultados(){
+  let desembolsos=0, gananciaPerdidaModificaciones=0;
+  state.prestamos.forEach(p=>{
     desembolsos += capitalDesembolsadoNeto(p);
     // Ganancia/pérdida por modificaciones NO sustanciales (NIIF PYMES). Las sustanciales
     // nunca tienen (por definición se tratan como préstamo nuevo), así que solo se suma
     // lo guardado en el historial de cada préstamo.
     (p.historialModificaciones||[]).forEach(m=>{ gananciaPerdidaModificaciones += Number(m.gananciaPerdida)||0; });
   });
-  const ingresos = interesesCobrados + capitalCobrado + moraCobrada + enganches + cobradoArchivado;
+  const T = desgloseIngresosCobrados();
+  const ingresos = T.intereses + T.capital + T.mora + T.enganches;
   const mostrarGananciaModif = state.config.mostrarGananciaModificaciones===true;
   const utilidad = ingresos - desembolsos + (mostrarGananciaModif ? gananciaPerdidaModificaciones : 0);
   const fila = (label, valor, negrita)=>`<tr>
       <td style="padding:6px 6px;${negrita?"font-weight:700;":""}">${label}</td>
       <td style="padding:6px 6px;text-align:right;${negrita?"font-weight:700;":""}">${money(valor)}</td>
+    </tr>`;
+  const filaSub = (label, valor)=>`<tr>
+      <td style="padding:2px 6px 2px 22px;font-size:12px;color:#8a8680;">${label}</td>
+      <td style="padding:2px 6px;text-align:right;font-size:12px;color:#8a8680;">${money(valor)}</td>
     </tr>`;
   return `
     <div id="reporte-imprimible">
@@ -1238,11 +1305,12 @@ function viewEstadoResultados(){
       <p class="hint" style="margin:0 0 14px;">Estado de resultados (base efectivo) · ${fmtDate(hoyISO())}</p>
       <p style="font-weight:700;margin:0 0 6px;">Ingresos</p>
       <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;">
-        ${fila("Intereses cobrados", interesesCobrados)}
-        ${fila("Abonos a capital cobrados", capitalCobrado)}
-        ${fila("Mora cobrada", moraCobrada)}
-        ${fila("Enganches al refinanciar", enganches)}
-        ${cobradoArchivado>0 ? fila("Cobrado antes de modificaciones (historial)", cobradoArchivado) : ""}
+        ${fila("Intereses cobrados", T.intereses)}
+        ${fila("Capital cobrado", T.capital)}
+        ${filaSub("De cuotas", T.capitalCuotas)}
+        ${filaSub("Por abonos a capital", T.abonos)}
+        ${fila("Mora cobrada", T.mora)}
+        ${fila("Enganches al refinanciar", T.enganches)}
         ${fila("Total ingresos", ingresos, true)}
       </table>
       <p style="font-weight:700;margin:0 0 6px;">Egresos</p>
@@ -1259,7 +1327,7 @@ function viewEstadoResultados(){
         <tr><td style="padding:8px 6px;font-weight:700;">${utilidad>=0?"Utilidad":"Pérdida"} del período</td>
         <td style="padding:8px 6px;text-align:right;font-weight:700;color:${utilidad>=0?"#3B6D11":"#c0433b"};">${money(Math.abs(utilidad))}</td></tr>
       </table>
-      <p class="hint" style="margin-top:14px;">Nota: es un estado en base efectivo (dinero que entra vs. dinero que sale), no un estado contable formal. Cuando un préstamo se refinancia, el saldo que se traslada del préstamo anterior NO se cuenta otra vez como desembolso — solo cuenta el monto adicional que realmente se entregó en efectivo en ese momento (si lo hubo). Cuando un refinanciamiento se clasifica como \"modificación no sustancial\" según NIIF para las PYMES, Sección 11 (prueba del umbral de valor presente), la diferencia se reconoce aquí como ganancia o pérdida; cuando es \"sustancial\", se trata como préstamo nuevo sin efecto adicional en este renglón.</p>
+      <p class="hint" style="margin-top:14px;">Nota: es un estado en base efectivo (dinero que entra vs. dinero que sale), no un estado contable formal. Cuando un préstamo se refinancia, el saldo que se traslada del préstamo anterior NO se cuenta otra vez como desembolso — solo cuenta el monto adicional que realmente se entregó en efectivo en ese momento (si lo hubo). Cuando un refinanciamiento se clasifica como "modificación no sustancial" según NIIF para las PYMES, Sección 11 (prueba del umbral de valor presente), la diferencia se reconoce aquí como ganancia o pérdida; cuando es "sustancial", se trata como préstamo nuevo sin efecto adicional en este renglón.${T.hayEstimado ? " Los cobros hechos antes de modificar un préstamo, cuando se registraron antes de que la app guardara el reparto, se dividen entre interés y capital por estimación (los abonos a capital, la mora y el total son exactos)." : ""}</p>
     </div>
     <div class="flexrow" style="margin-top:16px;">
       <button class="btn btn-outline" onclick="state.vista='ajustes'; render();">Volver</button>
