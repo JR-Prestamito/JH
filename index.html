@@ -27,6 +27,12 @@
   header p{color:var(--gold);font-weight:700;font-size:11px;margin:0 0 2px;letter-spacing:.04em;}
   header h1{color:#fff;font-size:19px;margin:0;font-weight:600;}
   .content{padding:16px;}
+  /* Botón flotante de "+" (Clientes y Préstamos): el contenedor se centra igual que la
+     barra inferior (mismo truco de max-width) pero no captura toques (pointer-events:none),
+     así solo el círculo del botón es tocable, sin bloquear la lista debajo de él. */
+  .fab-wrap{position:fixed;left:50%;transform:translateX(-50%);width:100%;max-width:420px;bottom:calc(var(--tabbar-h,64px) + 16px);pointer-events:none;z-index:350;}
+  .fab{position:absolute;right:16px;bottom:0;width:56px;height:56px;border-radius:50%;background:var(--navy);color:#fff;border:none;font-size:28px;line-height:56px;text-align:center;padding:0;box-shadow:0 4px 14px rgba(27,42,74,.35);pointer-events:auto;cursor:pointer;}
+  .fab:active{transform:scale(.94);}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
   .card{border-radius:16px;padding:14px;}
   .card .lbl{font-size:12px;color:#8a8680;margin:0 0 4px;}
@@ -342,7 +348,6 @@ let state = {
   config: JSON.parse(localStorage.getItem(LK("jr_config")) || '{"tasaMoraDiaria":0}'),
   vista: (_navPrevia && _navPrevia.vista) || "lista",
   seleccionId: (_navPrevia && _navPrevia.seleccionId) || null,
-  showFormCliente: (_navPrevia && _navPrevia.showFormCliente) || false,
   clienteEditId: (_navPrevia && _navPrevia.clienteEditId) || null,
   desbloqueado: sessionStorage.getItem(LK("jr_desbloqueado")) === "1",
   ajustesDesbloqueado: sessionStorage.getItem(LK("jr_ajustes_desbloqueado")) === "1",
@@ -353,7 +358,7 @@ function guardarNav(){
   try{
     sessionStorage.setItem(LK("jr_nav"), JSON.stringify({
       tab: state.tab, vista: state.vista, seleccionId: state.seleccionId,
-      showFormCliente: state.showFormCliente, clienteEditId: state.clienteEditId,
+      clienteEditId: state.clienteEditId,
       _nf: window._nf || null, _rf: window._rf || null
     }));
   }catch(e){}
@@ -1694,28 +1699,30 @@ function viewAjustes(){
 }
 
 function viewClientes(){
+  if(state.vista==="nuevo") return viewNuevoCliente();
   let html = `<div class="toprow buscador">
     <input id="f_buscarCliente" type="text" name="q" placeholder="Buscar cliente" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="flex:1;" value="${state.q}" oninput="state.q=this.value; filtrarListaClientes();">
-    <button class="iconbtn" onclick="abrirFormCliente(null)">+</button>
-  </div>`;
+  </div>
+  <div class="fab-wrap"><button class="fab" title="Nuevo cliente" onclick="abrirFormCliente(null)">+</button></div>`;
 
-  if(state.showFormCliente){
-    const ed = state.clienteEditId ? state.clientes.find(c=>c.id===state.clienteEditId) : null;
-    html += `<div class="row-card" style="display:block;">
+  html += `<div id="lista-clientes">${renderListaClientes()}</div>`;
+  return html;
+}
+// Pantalla separada para "Nuevo cliente" / "Editar cliente" (antes se abría inline arriba
+// de la lista) — mismo patrón de navegación que ya usa Préstamos con su vista "nuevo".
+function viewNuevoCliente(){
+  const ed = state.clienteEditId ? state.clientes.find(c=>c.id===state.clienteEditId) : null;
+  return `<div class="row-card" style="display:block;">
       <p style="font-weight:600;margin:0 0 10px;">${ed?"Editar cliente":"Nuevo cliente"}</p>
       <label><span>Nombre</span><input id="f_nombre" value="${ed?ed.nombre:""}"></label>
       <label><span>Celular</span><input id="f_celular" placeholder="9999-9999 (8 dígitos)" value="${ed?ed.celular||"":""}"></label>
       <label><span>Cédula</span><input id="f_cedula" placeholder="0000-0000-00000 (13 dígitos)" value="${ed?ed.cedula||"":""}"></label>
       <label><span>Dirección</span><input id="f_direccion" value="${ed?ed.direccion||"":""}"></label>
       <div class="flexrow">
-        <button class="btn btn-outline" onclick="state.showFormCliente=false; state.clienteEditId=null; render()">Cancelar</button>
+        <button class="btn btn-outline" onclick="state.clienteEditId=null; state.vista='lista'; render()">Cancelar</button>
         <button class="btn btn-gold" onclick="guardarCliente()">${ed?"Guardar cambios":"Guardar cliente"}</button>
       </div>
     </div>`;
-  }
-
-  html += `<div id="lista-clientes">${renderListaClientes()}</div>`;
-  return html;
 }
 function renderListaClientes(){
   const filtrados = state.clientes.filter(c => (c.nombre+c.codigo).toLowerCase().includes(state.q.toLowerCase()));
@@ -1742,7 +1749,7 @@ function filtrarListaClientes(){
 }
 function abrirFormCliente(id){
   state.clienteEditId = id;
-  state.showFormCliente = true;
+  state.vista = "nuevo";
   render();
 }
 
@@ -1781,7 +1788,7 @@ function guardarCliente(){
     const codigo = nextCode("C", state.clientes);
     state.clientes.push({ id: uid(), codigo, ...datos });
   }
-  state.showFormCliente = false;
+  state.vista = "lista";
   state.clienteEditId = null;
   save(); render();
 }
@@ -1824,8 +1831,8 @@ function viewPrestamos(){
 
   let html = `<div class="toprow buscador">
     <input id="f_buscarPrestamo" type="text" name="q" placeholder="Buscar préstamo (código o cliente)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="flex:1;" value="${state.qPrestamos||""}" oninput="state.qPrestamos=this.value; filtrarListaPrestamos();">
-    <button class="iconbtn" onclick="abrirNuevoPrestamo()">+</button>
   </div>
+  <div class="fab-wrap"><button class="fab" title="Nuevo préstamo" onclick="abrirNuevoPrestamo()">+</button></div>
   <div id="lista-prestamos">${renderListaPrestamos()}</div>`;
   return html;
 }
@@ -3041,7 +3048,7 @@ function viewTabbar(){
 const LIC_SUPABASE_URL = "https://kbskmdtgwnagdigtdlze.supabase.co";
 const LIC_SUPABASE_KEY = "sb_publishable_AnwNz39_voG8r7XnjCG6Vg_75jK9Aa7";
 const LIC_PLAN = "beta"; // esta copia del archivo solo acepta licencias del plan "beta"
-const LIC_DIAS_GRACIA = 30; // días que puede seguir usándose sin internet antes de exigir reconexión
+const LIC_DIAS_GRACIA = 5; // días que puede seguir usándose sin internet antes de exigir reconexión
 
 function licDeviceId(){
   let id = localStorage.getItem("jrp_device_id");
