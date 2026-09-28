@@ -108,7 +108,11 @@
   .backbtn{background:none;border:none;color:#fff;font-size:20px;margin-right:6px;cursor:pointer;}
   .cartera-grupo{font-size:12px;font-weight:700;color:#A32D2D;margin:16px 0 8px;text-transform:uppercase;letter-spacing:.03em;}
   .printbtn{background:none;border:none;color:#9c9890;font-size:16px;cursor:pointer;padding:4px;}
-  #recibo-imprimible{background:#fff;border:1px solid #e5e1d8;border-radius:16px;padding:20px;}
+  #recibo-imprimible{background:#fff;border:1px solid #e5e1d8;border-radius:16px;padding:20px;position:relative;overflow:hidden;}
+  /* Marca de agua del recibo: la palabra PAGADO, en diagonal y muy tenue, detrás del
+     contenido (el texto viene del atributo data-marca para no tener que duplicarlo). */
+  #recibo-imprimible::before{content:attr(data-marca);position:absolute;left:0;right:0;top:50%;transform:translateY(-50%) rotate(-28deg);text-align:center;font-size:52px;font-weight:800;line-height:1.15;letter-spacing:.14em;text-transform:uppercase;color:rgba(27,42,74,.07);pointer-events:none;z-index:0;padding:0 8px;}
+  #recibo-imprimible > *{position:relative;z-index:1;}
   #recibo-imprimible h2{font-size:16px;margin:0 0 2px;color:var(--navy);}
   #recibo-imprimible .rline{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px dashed #eee;}
   #recibo-imprimible .rtotal{font-size:17px;font-weight:700;color:var(--navy);}
@@ -785,8 +789,21 @@ function resumen(p){
     const baseAnterior = periodosPagados>0 ? tabla.slice(0,periodosPagados).reduce((s,f)=>s+f.cuota,0) : 0;
     const abonadoEnCuotaActual = Math.max(0, totalPagado-baseAnterior);
     const capitalPendienteIndef = periodosPagados>0 ? (tabla[periodosPagados-1].saldo||capital) : capital;
+    // Como este método es "solo interés", cada cuota vencida sin pagar es interés puro (el
+    // capital no baja por el cronograma normal, solo por abono a capital). Ese interés vencido
+    // SÍ es deuda real de hoy, así que se suma al saldo pendiente. capitalPendiente se deja
+    // solo con el capital puro porque es el que se usa para refinanciar. Igual que en los
+    // demás métodos, la mora no se incluye aquí (se maneja aparte).
+    const hoy = hoyISO();
+    let interesVencidoIndef = 0;
+    if(cuotaActualRow && cuotaActualRow.fecha < hoy){
+      interesVencidoIndef += Math.max(0, cuotaActualRow.cuota - abonadoEnCuotaActual);
+      for(let i=periodosPagados+1; i<tabla.length; i++){
+        if(tabla[i].fecha < hoy) interesVencidoIndef += tabla[i].cuota; else break;
+      }
+    }
     return { cuota: cuotaActualRow ? cuotaActualRow.cuota : (tabla[tabla.length-1]?tabla[tabla.length-1].cuota:0),
-      saldoPendiente: capitalPendienteIndef, capitalPendiente: capitalPendienteIndef, estado:"Activo",
+      saldoPendiente: capitalPendienteIndef + interesVencidoIndef, capitalPendiente: capitalPendienteIndef, estado:"Activo",
       proximaFecha: cuotaActualRow ? cuotaActualRow.fecha : null, tabla,
       pagosHechos: periodosPagados, cuotaActual: cuotaActualRow,
       abonadoEnCuotaActual, faltaEnCuotaActual: cuotaActualRow ? Math.max(0, cuotaActualRow.cuota-abonadoEnCuotaActual) : 0,
@@ -2414,48 +2431,78 @@ function cargarJsPDF(cb){
   s.onerror = function(){ state.pdfBusy = false; render(); alert("No se pudo cargar el generador de PDF. Revisa tu conexión a internet e intenta de nuevo."); };
   document.head.appendChild(s);
 }
-function generarPDFRecibo(p, cli, pg, r, numRecibo){
+// Texto diagonal muy tenue en el centro de la página. El ángulo se calcula a mano (en vez de
+// usar align:"center" con angle) porque jsPDF no centra bien el texto rotado.
+function dibujarMarcaDeAgua(doc, texto, anchoPag, altoPag){
+  const t = String(texto||"").toUpperCase().trim();
+  if(!t) return;
+  const ang = 30, rad = ang*Math.PI/180;
+  let size = 44;
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(size);
+  // Se achica la letra si el nombre es largo, para que la diagonal quepa dentro del ancho.
+  while(size>8 && doc.getTextWidth(t)*Math.cos(rad) > anchoPag-10){ size -= 1; doc.setFontSize(size); }
+  const w = doc.getTextWidth(t);
+  const cx = anchoPag/2, cy = altoPag/2;
+  const x0 = cx - (w/2)*Math.cos(rad), y0 = cy + (w/2)*Math.sin(rad);
+  doc.saveGraphicsState();
+  try{
+    doc.setGState(new doc.GState({opacity: 0.10}));
+    doc.setTextColor(27,42,74);
+  }catch(e){
+    // Si esta versión de jsPDF no maneja transparencia, se usa un gris muy claro.
+    doc.setTextColor(232,234,240);
+  }
+  doc.text(t, x0, y0, {angle: ang});
+  doc.restoreGraphicsState();
+  doc.setTextColor(0,0,0);
+}
+function generarPDFRecibo(p, cli, d){
   const { jsPDF } = window.jspdf;
-  const totalPago = (Number(pg.monto)||0) + (Number(pg.mora)||0);
-  const concepto = pg.liquidacion ? "Liquidación anticipada" : (pg.mora>0 ? "Cuota + mora por atraso" : "Abono / cuota");
-  const filas = [
-    ["No. de recibo", "R-"+numRecibo],
-    ["Fecha", fmtDate(pg.fecha)],
-    ["Cliente", cli?cli.nombre:"—"]
-  ];
-  if(cli && cli.cedula) filas.push(["Cédula", cli.cedula]);
-  filas.push(["Préstamo", p.codigo]);
-  filas.push(["Método", p.metodo]);
-  filas.push(["Concepto", concepto]);
-  if(pg.mora>0){ filas.push(["Cuota/abono", money(pg.monto)]); filas.push(["Mora", money(pg.mora)]); }
-  filas.push(["Total pagado", money(totalPago)]);
-  filas.push(["Saldo pendiente", money(r.saldoPendiente)]);
-
   const width = 80; // ancho tipo recibo/ticket, no una hoja carta con espacio de sobra
-  const alto = 46 + filas.length*7 + 14;
-  const doc = new jsPDF({unit:"mm", format:[width, alto]});
-  let y = 12;
-  doc.setFont("helvetica","bold"); doc.setFontSize(13);
-  doc.setTextColor(27,42,74);
-  doc.text(nombreNegocio(), width/2, y, {align:"center"}); y+=6;
-  doc.setFont("helvetica","normal"); doc.setFontSize(9);
-  doc.setTextColor(120,120,120);
-  doc.text("Recibo de pago", width/2, y, {align:"center"}); y+=6;
-  doc.setDrawColor(220,220,220);
-  doc.line(6, y, width-6, y); y+=7;
+  // Se dibuja dos veces: una en una hoja de prueba muy alta, solo para medir cuánto mide el
+  // recibo (los valores largos, como el concepto, se parten en varias líneas), y otra en el
+  // PDF final con el alto exacto. Así nada se sale de la hoja ni sobra espacio.
+  const dibujar = (doc, altoFinal)=>{
+    if(altoFinal) dibujarMarcaDeAgua(doc, "PAGADO", width, altoFinal);
+    let y = 12;
+    doc.setFont("helvetica","bold"); doc.setFontSize(13);
+    doc.setTextColor(27,42,74);
+    doc.text(nombreNegocio(), width/2, y, {align:"center"}); y+=6;
+    doc.setFont("helvetica","normal"); doc.setFontSize(9);
+    doc.setTextColor(120,120,120);
+    doc.text("Recibo de pago", width/2, y, {align:"center"}); y+=6;
+    doc.setDrawColor(220,220,220);
+    doc.line(6, y, width-6, y); y+=7;
 
-  doc.setTextColor(40,40,40); doc.setFontSize(9.5);
-  filas.forEach(([label, valor])=>{
-    doc.setFont("helvetica","normal");
-    doc.text(label, 6, y);
-    doc.setFont("helvetica","bold");
-    doc.text(String(valor), width-6, y, {align:"right"});
-    y+=7;
-  });
-  y+=3;
-  doc.setDrawColor(220,220,220); doc.line(6,y,width-6,y); y+=8;
-  doc.setFont("helvetica","italic"); doc.setFontSize(9); doc.setTextColor(120,120,120);
-  doc.text("¡Gracias por su pago!", width/2, y, {align:"center"});
+    const fila = (label, valor, sub, total)=>{
+      const xL = sub ? 10 : 6;
+      doc.setFontSize(9.5);
+      doc.setFont("helvetica", total?"bold":"normal");
+      const wLabel = doc.getTextWidth(label);
+      doc.setFont("helvetica", sub?"normal":"bold");
+      const lin = doc.splitTextToSize(String(valor), Math.max(width-6-(xL+wLabel+3), 18));
+      if(sub) doc.setTextColor(110,110,110); else doc.setTextColor(40,40,40);
+      doc.setFont("helvetica", total?"bold":"normal");
+      doc.text(label, xL, y);
+      doc.setFont("helvetica", sub?"normal":"bold");
+      lin.forEach((t,i)=> doc.text(t, width-6, y + i*4.4, {align:"right"}));
+      y += 7 + (lin.length-1)*4.4;
+    };
+    d.lineas.forEach(x=> fila(x.l, x.v, x.sub, false));
+    y+=1;
+    fila("Total pagado", money(d.totalPago), false, true);
+    fila("Saldo pendiente", money(d.saldo), false, false);
+    y+=2;
+    doc.setDrawColor(220,220,220); doc.line(6,y,width-6,y); y+=8;
+    doc.setFont("helvetica","italic"); doc.setFontSize(9); doc.setTextColor(120,120,120);
+    doc.text("¡Gracias por su pago!", width/2, y, {align:"center"});
+    return y;
+  };
+  const yFinal = dibujar(new jsPDF({unit:"mm", format:[width, 1000]}), 0);
+  const alto = yFinal + 8;
+  const doc = new jsPDF({unit:"mm", format:[width, alto]});
+  dibujar(doc, alto);
   return doc;
 }
 function generarPDFTabla(p, cli, r){
@@ -2542,15 +2589,13 @@ function compartirRecibo(prestamoId, pagoId){
   const cli = state.clientes.find(c=>c.id===p.clienteId);
   const pagos = p.pagos||[];
   const idx = pagos.findIndex(x=>x.id===pagoId);
-  const pg = idx>=0 ? pagos[idx] : null;
-  if(!pg) return;
-  const numRecibo = pg.id ? pg.id.slice(-6).toUpperCase() : String(idx+1).padStart(4,"0");
+  const pg0 = idx>=0 ? pagos[idx] : null;
+  if(!pg0) return;
   if(state.pdfBusy) return;
   state.pdfBusy = true; render();
   cargarJsPDF(async function(){
     try{
-      const r = resumen(p);
-      const doc = generarPDFRecibo(p, cli, pg, r, numRecibo);
+      const doc = generarPDFRecibo(p, cli, datosRecibo(p, cli, pg0, idx));
       await compartirPDF(doc, `recibo-${p.codigo}.pdf`);
     } finally {
       state.pdfBusy = false; render();
@@ -2604,12 +2649,10 @@ function imprimirRecibo(){
   const cli = state.clientes.find(c=>c.id===p.clienteId);
   const pagos = p.pagos || [];
   const idx = sel.pagoId ? pagos.findIndex(pg=>pg.id===sel.pagoId) : -1;
-  const pg = idx>=0 ? pagos[idx] : pagos[pagos.length-1];
-  if(!pg) return;
-  const numRecibo = pg.id ? pg.id.slice(-6).toUpperCase() : String(idx+1).padStart(4,"0");
-  const r = resumen(p);
+  const pg0 = idx>=0 ? pagos[idx] : pagos[pagos.length-1];
+  if(!pg0) return;
   cargarJsPDF(function(){
-    const doc = generarPDFRecibo(p, cli, pg, r, numRecibo);
+    const doc = generarPDFRecibo(p, cli, datosRecibo(p, cli, pg0, idx));
     imprimirPDFDoc(doc);
   });
 }
@@ -2938,6 +2981,43 @@ function resolverPagoRecibo(p, pg){
   const abonoLigado = pg.abonoId ? buscarPagoPorId(p, pg.abonoId) : null;
   return { pg, abonoLigado };
 }
+// Arma en un solo lugar TODO lo que dice un recibo (líneas, total, saldo), para que la
+// pantalla, el PDF de imprimir y el PDF de enviar salgan siempre idénticos. Si se toca el
+// abono a capital de un cobro (o la cuota), se resuelve hacia la cuota y se muestran juntos.
+function datosRecibo(p, cli, pg0, idx){
+  const resuelto = resolverPagoRecibo(p, pg0);
+  const pg = resuelto.pg;
+  const abonoLigado = resuelto.abonoLigado;
+  const numRecibo = pg.id ? pg.id.slice(-6).toUpperCase() : String(idx+1).padStart(4,"0");
+  const totalPago = (Number(pg.monto)||0) + (Number(pg.mora)||0) + (abonoLigado ? (Number(abonoLigado.monto)||0) : 0);
+  let concepto = pg.liquidacion ? "Liquidación anticipada" : (pg.tipo==="enganche" ? "Enganche al refinanciar" : (pg.mora>0 ? "Cuota + mora por atraso" : "Abono / cuota"));
+  if(abonoLigado) concepto += " + abono a capital";
+  const lineas = [
+    {l:"No. de recibo", v:"R-"+numRecibo},
+    {l:"Fecha", v:fmtDate(pg.fecha)},
+    {l:"Cliente", v:cli?cli.nombre:"—"}
+  ];
+  if(cli && cli.cedula) lineas.push({l:"Cédula", v:cli.cedula});
+  lineas.push({l:"Préstamo", v:p.codigo});
+  lineas.push({l:"Método", v:p.metodo});
+  lineas.push({l:"Concepto", v:concepto});
+  if(pg.interes!=null && pg.capital!=null && pg.tipo!=="abono_capital"){
+    lineas.push({l:"Cuota", v:money(pg.monto)});
+    if(pg.interes>0) lineas.push({l:"· Interés", v:money(pg.interes), sub:true});
+    if(pg.capital>0) lineas.push({l:"· Capital", v:money(pg.capital), sub:true});
+    if(abonoLigado) lineas.push({l:"Abono a capital", v:money(abonoLigado.monto)});
+    if(pg.mora>0) lineas.push({l:"Mora", v:money(pg.mora)});
+  } else if(pg.tipo==="abono_capital"){
+    lineas.push({l:"Abono a capital", v:money(pg.monto)});
+  } else if(pg.mora>0 || abonoLigado){
+    // Cobros guardados antes de que se registrara el desglose interés/capital.
+    lineas.push({l:"Cuota / abono", v:money(pg.monto)});
+    if(abonoLigado) lineas.push({l:"Abono a capital", v:money(abonoLigado.monto)});
+    if(pg.mora>0) lineas.push({l:"Mora", v:money(pg.mora)});
+  }
+  const r = resumen(p);
+  return { pg, abonoLigado, numRecibo, totalPago, lineas, saldo: r.saldoPendiente };
+}
 function viewRecibo(){
   const sel = state.reciboSel || {};
   const p = state.prestamos.find(x=>x.id===sel.prestamoId);
@@ -2947,37 +3027,19 @@ function viewRecibo(){
   const idx = sel.pagoId ? pagos.findIndex(pg=>pg.id===sel.pagoId) : -1;
   const pg0 = idx>=0 ? pagos[idx] : pagos[pagos.length-1];
   if(!pg0){ state.vista="lista"; return viewPagos(); }
-  const resuelto = resolverPagoRecibo(p, pg0);
-  const pg = resuelto.pg;
-  const abonoLigado = resuelto.abonoLigado;
-  const numRecibo = pg.id ? pg.id.slice(-6).toUpperCase() : String(idx+1).padStart(4,"0");
-  const totalPago = (Number(pg.monto)||0) + (Number(pg.mora)||0) + (abonoLigado ? (Number(abonoLigado.monto)||0) : 0);
-  const r = resumen(p);
-  let concepto = pg.liquidacion ? "Liquidación anticipada" : (pg.tipo==="enganche" ? "Enganche al refinanciar" : (pg.mora>0 ? "Cuota + mora por atraso" : "Abono / cuota"));
-  if(abonoLigado) concepto += " + abono a capital";
+  const d = datosRecibo(p, cli, pg0, idx);
+  const pg = d.pg;
+  const filasHtml = d.lineas.map(x => x.sub
+    ? `<div class="rline" style="padding-left:14px;color:#666;"><span>${x.l}</span><span>${x.v}</span></div>`
+    : `<div class="rline"><span>${x.l}</span><b>${x.v}</b></div>`).join("\n      ");
 
   return `
-    <div id="recibo-imprimible">
+    <div id="recibo-imprimible" data-marca="PAGADO">
       <h2>${nombreNegocio()}</h2>
       <p class="hint" style="margin:0 0 14px;">Recibo de pago</p>
-      <div class="rline"><span>No. de recibo</span><b>R-${numRecibo}</b></div>
-      <div class="rline"><span>Fecha</span><b>${fmtDate(pg.fecha)}</b></div>
-      <div class="rline"><span>Cliente</span><b>${cli?cli.nombre:"—"}</b></div>
-      ${cli && cli.cedula ? `<div class="rline"><span>Cédula</span><b>${cli.cedula}</b></div>` : ""}
-      <div class="rline"><span>Préstamo</span><b>${p.codigo}</b></div>
-      <div class="rline"><span>Método</span><b>${p.metodo}</b></div>
-      <div class="rline"><span>Concepto</span><b>${concepto}</b></div>
-      ${pg.interes!=null && pg.capital!=null && pg.tipo!=="abono_capital" ? `
-      <div class="rline"><span>Cuota</span><b>${money(pg.monto)}</b></div>
-      ${pg.interes>0 ? `<div class="rline" style="padding-left:14px;color:#666;"><span>· Interés</span><span>${money(pg.interes)}</span></div>` : ""}
-      ${pg.capital>0 ? `<div class="rline" style="padding-left:14px;color:#666;"><span>· Capital</span><span>${money(pg.capital)}</span></div>` : ""}
-      ${abonoLigado ? `<div class="rline"><span>Abono a capital</span><b>${money(abonoLigado.monto)}</b></div>` : ""}
-      ${pg.mora>0 ? `<div class="rline"><span>Mora</span><b>${money(pg.mora)}</b></div>` : ""}
-      ` : (pg.tipo==="abono_capital" ? `<div class="rline"><span>Abono a capital</span><b>${money(pg.monto)}</b></div>` :
-      (pg.mora>0 ? `<div class="rline"><span>Cuota / abono</span><b>${money(pg.monto)}</b></div>
-      <div class="rline"><span>Mora</span><b>${money(pg.mora)}</b></div>` : ""))}
-      <div class="rline rtotal" style="border-bottom:none;padding-top:14px;"><span>Total pagado</span><span>${money(totalPago)}</span></div>
-      <div class="rline"><span>Saldo pendiente actual del préstamo</span><b>${money(r.saldoPendiente)}</b></div>
+      ${filasHtml}
+      <div class="rline rtotal" style="border-bottom:none;padding-top:14px;"><span>Total pagado</span><span>${money(d.totalPago)}</span></div>
+      <div class="rline"><span>Saldo pendiente actual del préstamo</span><b>${money(d.saldo)}</b></div>
       <p class="hint" style="margin-top:18px;">Gracias por su pago.</p>
     </div>
     <div class="flexrow" style="margin-top:16px;">
