@@ -4963,6 +4963,23 @@ function cargarPDFLibs(cb){
     cargarScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js", cb);
   });
 }
+// ===== Versión de la app y aviso de "versión nueva" =====
+const JR_VERSION = "v14";
+function mostrarAvisoVersion(){
+  if(document.getElementById("jr-aviso-version") || !document.body) return;
+  const d = document.createElement("div");
+  d.id = "jr-aviso-version";
+  d.innerHTML = '<span>Hay una versión nueva</span><button class="jr-av-ok">Actualizar</button><button class="jr-av-x" aria-label="Cerrar">✕</button>';
+  d.querySelector(".jr-av-ok").addEventListener("click", function(){ location.reload(); });
+  d.querySelector(".jr-av-x").addEventListener("click", function(){ d.remove(); });
+  document.body.appendChild(d);
+}
+if("serviceWorker" in navigator){
+  // El sw.js avisa cuando baja una versión nueva; si no la tocas, se verá la próxima vez que abras la app.
+  navigator.serviceWorker.addEventListener("message", function(ev){
+    if(ev.data && ev.data.tipo === "jr-nueva-version") mostrarAvisoVersion();
+  });
+}
 // Agrupa las tarjetas de Ajustes en 5 grupos plegables (solo se mueven de lugar; nada se vuelve a crear).
 const AJ_GRUPOS = [
   { k:"ajg-general", t:"General", d:"Negocio, apariencia, letra, zona horaria y moneda",
@@ -5003,6 +5020,10 @@ function agruparAjustes(){
   });
   ancla.parentNode.insertBefore(frag, ancla);
   ancla.remove();
+  const ult = app.querySelectorAll("details.aj-grupo");
+  if(ult.length && !document.getElementById("aj-version")){
+    ult[ult.length-1].insertAdjacentHTML("afterend", '<p id="aj-version">JR Prestamito · versión ' + JR_VERSION + '</p>');
+  }
 }
 // ===== Navegador de Redmi/Xiaomi (Mi Browser) =====
 // Su "compartir" abre una hoja de texto vacía (el archivo no llega a WhatsApp) y no sabe
@@ -7204,6 +7225,15 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   [data-theme="dark"] .aj-grupo>summary{color:#E3E5EA;}
   [data-theme="dark"] .aj-grupo>summary small{color:#9AA1AE;}
   [data-theme="dark"] .aj-grupo[open]{border-color:#C9973E;}
+
+  /* Aviso de versión nueva */
+  #jr-aviso-version{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 88px);z-index:9500;display:flex;align-items:center;gap:10px;background:#1B2A4A;color:#fff;border:1px solid #C9973E;border-radius:14px;padding:10px 12px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);}
+  #jr-aviso-version span{flex:1;}
+  #jr-aviso-version button{border:0;border-radius:10px;font-weight:700;font-size:14px;padding:9px 14px;cursor:pointer;}
+  #jr-aviso-version .jr-av-ok{background:#C9973E;color:#1B2A4A;}
+  #jr-aviso-version .jr-av-x{background:transparent;color:#fff;padding:9px 8px;font-size:16px;}
+  #aj-version{text-align:center;font-size:12px;color:#7a7f8c;margin:6px 0 14px;}
+  [data-theme="dark"] #aj-version{color:#9AA1AE;}
 </style>
 <div id="aviso-conexion"></div>
 <script>

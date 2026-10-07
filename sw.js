@@ -1,10 +1,11 @@
-/* JR Prestamito PRO - Service Worker v3
-   Permite abrir la app SIN internet. Los datos (clientes, préstamos) NO viven aquí:
-   están en el almacenamiento del navegador; este archivo solo guarda una copia de la propia app.
-   Para forzar que todos los celulares bajen una versión nueva, cambia CACHE_VERSION (v4, v5...). */
-const CACHE_VERSION = "jrp-pro-v3";
+/* JR Prestamito PRO - Service Worker v4
+   - Abre la app AL INSTANTE (con o sin internet) usando la copia guardada.
+   - Por detrás revisa si en GitHub hay una versión nueva; si la hay, la guarda y la app muestra
+     un aviso "Hay una versión nueva · Actualizar". Si no la tocas, la verás la próxima vez que abras.
+   - Tus datos (clientes, préstamos) NO viven aquí: están en el almacenamiento del navegador.
+   Para forzar que todos los celulares empiecen de cero, cambia CACHE_VERSION (v5, v6...). */
+const CACHE_VERSION = "jrp-pro-v4";
 const APP = "./index.html";
-const ESPERA_RED_MS = 4000; // si la red tarda más, se abre la copia guardada
 
 self.addEventListener("install", function(e){
   e.waitUntil(
@@ -18,33 +19,64 @@ self.addEventListener("install", function(e){
 self.addEventListener("activate", function(e){
   e.waitUntil(
     caches.keys().then(function(ks){
-      // Solo borra las copias viejas DE ESTA app (jrp-pro-...). Así no se lleva las de otras
-      // apps que vivan en el mismo sitio (por ejemplo la beta).
+      // Solo borra copias viejas DE ESTA app (jrp-pro-...), nunca las de otras apps del mismo sitio.
       return Promise.all(ks.filter(function(k){ return k.indexOf("jrp-pro-") === 0 && k !== CACHE_VERSION; })
                            .map(function(k){ return caches.delete(k); }));
     }).then(function(){ return self.clients.claim(); })
   );
 });
 
-function paginaApp(req){
-  return new Promise(function(resolve){
-    let listo = false;
-    const usarCopia = function(){
-      caches.open(CACHE_VERSION).then(function(c){ return c.match(APP); }).then(function(r){
-        if(!listo){ listo = true; resolve(r || Response.error()); }
-      });
-    };
-    const t = setTimeout(usarCopia, ESPERA_RED_MS);
-    fetch(req).then(function(resp){
-      clearTimeout(t);
-      // Aunque la red haya tardado y ya se abrió la copia, la nueva queda guardada para la próxima vez.
-      if(resp && resp.ok){
-        const copia = resp.clone();
-        caches.open(CACHE_VERSION).then(function(c){ c.put(APP, copia); });
-      }
-      if(!listo){ listo = true; resolve(resp); }
-    }).catch(function(){ clearTimeout(t); usarCopia(); });
+// "Huella" del contenido para saber si la app cambió (más fiable que comparar fechas).
+async function huella(resp){
+  const buf = await resp.clone().arrayBuffer();
+  const h = await crypto.subtle.digest("SHA-1", buf);
+  return Array.from(new Uint8Array(h)).map(function(x){ return x.toString(16).padStart(2, "0"); }).join("");
+}
+
+function avisarNuevaVersion(){
+  return self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function(cs){
+    cs.forEach(function(c){ c.postMessage({ tipo: "jr-nueva-version" }); });
   });
+}
+
+// Por detrás: pregunta a GitHub si hay algo nuevo. "no-cache" = pregunta si cambió y, si no
+// cambió, casi no gasta datos.
+async function buscarNueva(url){
+  try{
+    const resp = await fetch(new Request(url, { cache: "no-cache" }));
+    if(!resp || !resp.ok || resp.redirected) return;
+    const cache = await caches.open(CACHE_VERSION);
+    const vieja = await cache.match(APP);
+    if(vieja && (await huella(vieja)) === (await huella(resp))) return;   // igual: nada que avisar
+    await cache.put(APP, resp.clone());
+    if(vieja) await avisarNuevaVersion();                                  // había una anterior: avisar
+  }catch(err){}
+}
+
+function paginaSinConexion(){
+  const html = "<!doctype html><html lang='es'><head><meta charset='utf-8'>" +
+    "<meta name='viewport' content='width=device-width,initial-scale=1'><title>JR Prestamito</title></head>" +
+    "<body style=\"margin:0;font-family:sans-serif;background:#1B2A4A;color:#fff;text-align:center;padding:60px 24px\">" +
+    "<h2>Sin conexión</h2><p>Abre la app una vez con internet para poder usarla sin conexión.</p>" +
+    "<button onclick='location.reload()' style='margin-top:18px;padding:12px 26px;border:0;border-radius:12px;" +
+    "background:#C9973E;color:#1B2A4A;font-weight:700;font-size:16px'>Reintentar</button></body></html>";
+  return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+}
+
+async function paginaApp(e, req){
+  const cache = await caches.open(CACHE_VERSION);
+  const guardada = await cache.match(APP);
+  if(guardada){
+    e.waitUntil(buscarNueva(req.url));      // en segundo plano, sin hacerte esperar
+    return guardada;                        // abre al instante
+  }
+  try{                                      // primera vez (todavía no hay copia)
+    const resp = await fetch(req);
+    if(resp && resp.ok && !resp.redirected) await cache.put(APP, resp.clone());
+    return resp;
+  }catch(err){
+    return paginaSinConexion();
+  }
 }
 
 function archivoLocal(req){
@@ -64,6 +96,6 @@ self.addEventListener("fetch", function(e){
   if(req.method !== "GET") return;
   const url = new URL(req.url);
   if(url.origin !== self.location.origin) return;   // la nube (Supabase), WhatsApp, etc.: directo a la red
-  if(req.mode === "navigate"){ e.respondWith(paginaApp(req)); return; }
+  if(req.mode === "navigate"){ e.respondWith(paginaApp(e, req)); return; }
   e.respondWith(archivoLocal(req));                  // iconos y demás archivos de la misma carpeta
 });
