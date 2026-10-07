@@ -1,73 +1,60 @@
-// JR Prestamito - Service Worker (beta v1)
-// Permite abrir la app sin internet. Los datos viven en localStorage del teléfono;
-// este archivo solo guarda en caché la propia app y las librerías de Excel/PDF.
-// Para forzar que todos los teléfonos bajen una versión nueva, cambia CACHE_VERSION.
-const CACHE_VERSION = "jrp-beta-v1";
-const LIBS = [
-  "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-];
-const ESPERA_RED_MS = 4000; // si la red tarda más, se usa la copia guardada
+const CACHE = "jr-prestamito-v1";
+const BASE = ["./", "./index.html"];
 
-self.addEventListener("install", (event) => {
-  event.waitUntil((async () => {
-    const cache = await caches.open(CACHE_VERSION);
-    try { await cache.add(new Request("./", { cache: "reload" })); } catch (e) {}
-    for (const url of LIBS) {
-      try {
-        const resp = await fetch(url, { mode: "no-cors" });
-        await cache.put(url, resp);
-      } catch (e) {}
-    }
-    self.skipWaiting();
-  })());
+self.addEventListener("install", function(e){
+  e.waitUntil(
+    caches.open(CACHE).then(function(c){
+      return Promise.all(BASE.map(function(u){ return c.add(u).catch(function(){}); }));
+    }).then(function(){ return self.skipWaiting(); })
+  );
 });
 
-self.addEventListener("activate", (event) => {
-  event.waitUntil((async () => {
-    const claves = await caches.keys();
-    await Promise.all(claves.filter(k => k !== CACHE_VERSION).map(k => caches.delete(k)));
-    await self.clients.claim();
-  })());
+self.addEventListener("activate", function(e){
+  e.waitUntil(
+    caches.keys().then(function(ks){
+      return Promise.all(ks.filter(function(k){ return k !== CACHE; }).map(function(k){ return caches.delete(k); }));
+    }).then(function(){ return self.clients.claim(); })
+  );
 });
 
-function conTiempo(promesa, ms) {
-  return new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error("timeout")), ms);
-    promesa.then(r => { clearTimeout(t); resolve(r); }, e => { clearTimeout(t); reject(e); });
-  });
-}
-
-self.addEventListener("fetch", (event) => {
-  const req = event.request;
-  if (req.method !== "GET") return;
+self.addEventListener("fetch", function(e){
+  const req = e.request;
+  if(req.method !== "GET") return;
   const url = new URL(req.url);
+  if(url.origin !== self.location.origin) return;
 
-  // La app (index.html): primero la red, para tener siempre la última versión;
-  // sin internet (o con red muy lenta) usa la copia guardada.
-  if (req.mode === "navigate" || (url.origin === self.location.origin && url.pathname.endsWith("/index.html"))) {
-    event.respondWith((async () => {
-      const cache = await caches.open(CACHE_VERSION);
-      try {
-        const resp = await conTiempo(fetch(req), ESPERA_RED_MS);
-        if (resp && resp.ok) cache.put("./", resp.clone());
+  if(req.mode === "navigate"){
+    e.respondWith(
+      new Promise(function(resolve){
+        let listo = false;
+        const usarCopia = function(){
+          caches.match(req, {ignoreSearch:true})
+            .then(function(r){ return r || caches.match("./index.html") || caches.match("./"); })
+            .then(function(r){ if(!listo){ listo = true; resolve(r || Response.error()); } });
+        };
+        const t = setTimeout(usarCopia, 4000);
+        // cache:"no-cache" obliga al navegador a preguntarle al servidor si hay version nueva,
+        // asi una actualizacion se ve al abrir la app y no unos minutos despues.
+        fetch(req, {cache:"no-cache"}).then(function(resp){
+          clearTimeout(t);
+          if(resp && resp.ok){
+            const copia = resp.clone();
+            caches.open(CACHE).then(function(c){ c.put(req, copia.clone()); c.put("./index.html", copia); });
+          }
+          if(!listo){ listo = true; resolve(resp); }
+        }).catch(function(){ clearTimeout(t); usarCopia(); });
+      })
+    );
+    return;
+  }
+
+  e.respondWith(
+    caches.match(req).then(function(hit){
+      const red = fetch(req).then(function(resp){
+        if(resp && resp.ok){ const copia = resp.clone(); caches.open(CACHE).then(function(c){ c.put(req, copia); }); }
         return resp;
-      } catch (e) {
-        return (await cache.match("./")) || (await cache.match(req)) || Response.error();
-      }
-    })());
-    return;
-  }
-
-  // Librerías de Excel y PDF: copia guardada primero, se actualiza en segundo plano.
-  if (url.hostname === "cdnjs.cloudflare.com") {
-    event.respondWith((async () => {
-      const cache = await caches.open(CACHE_VERSION);
-      const guardada = await cache.match(req);
-      const red = fetch(req).then(r => { cache.put(req, r.clone()); return r; }).catch(() => null);
-      return guardada || (await red) || Response.error();
-    })());
-    return;
-  }
-  // Todo lo demás (licencia en Supabase, sincronización, WhatsApp) pasa directo a la red.
+      }).catch(function(){ return hit; });
+      return hit || red;
+    })
+  );
 });
