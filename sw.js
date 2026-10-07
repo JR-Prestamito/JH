@@ -1,11 +1,13 @@
-/* JR Prestamito PRO - Service Worker v4
+/* JR Prestamito PRO - Service Worker v5
    - Abre la app AL INSTANTE (con o sin internet) usando la copia guardada.
-   - Por detrás revisa si en GitHub hay una versión nueva; si la hay, la guarda y la app muestra
-     un aviso "Hay una versión nueva · Actualizar". Si no la tocas, la verás la próxima vez que abras.
+   - Por detrás revisa si en GitHub hay una versión nueva; si la hay, la guarda APARTE y la app muestra
+     un aviso "Hay una versión nueva · Actualizar". La app NO cambia de versión hasta que toques
+     "Actualizar" (ni al recargar, ni al cerrar y abrir). Mientras tanto el aviso vuelve a salir al abrir.
    - Tus datos (clientes, préstamos) NO viven aquí: están en el almacenamiento del navegador.
    Para forzar que todos los celulares empiecen de cero, cambia CACHE_VERSION (v5, v6...). */
-const CACHE_VERSION = "jrp-pro-v4";
+const CACHE_VERSION = "jrp-pro-v5";
 const APP = "./index.html";
+const NUEVA = "./index-nueva.html";   // versión nueva guardada aparte, en espera de que toques Actualizar
 
 self.addEventListener("install", function(e){
   e.waitUntil(
@@ -40,18 +42,45 @@ function avisarNuevaVersion(){
 }
 
 // Por detrás: pregunta a GitHub si hay algo nuevo. "no-cache" = pregunta si cambió y, si no
-// cambió, casi no gasta datos.
+// cambió, casi no gasta datos. La versión nueva se guarda APARTE (NUEVA): no reemplaza a la
+// que estás usando hasta que toques "Actualizar".
 async function buscarNueva(url){
   try{
     const resp = await fetch(new Request(url, { cache: "no-cache" }));
     if(!resp || !resp.ok || resp.redirected) return;
     const cache = await caches.open(CACHE_VERSION);
-    const vieja = await cache.match(APP);
-    if(vieja && (await huella(vieja)) === (await huella(resp))) return;   // igual: nada que avisar
-    await cache.put(APP, resp.clone());
-    if(vieja) await avisarNuevaVersion();                                  // había una anterior: avisar
+    const actual = await cache.match(APP);
+    if(actual && (await huella(actual)) === (await huella(resp))){
+      await cache.delete(NUEVA);                  // ya estás en la última: nada pendiente
+      return;
+    }
+    if(!actual){ await cache.put(APP, resp.clone()); return; }   // no había copia: se usa directo
+    await cache.put(NUEVA, resp.clone());
+    await avisarNuevaVersion();
   }catch(err){}
 }
+
+// Al tocar "Actualizar": la versión nueva pasa a ser la que se usa.
+async function aplicarNueva(){
+  const cache = await caches.open(CACHE_VERSION);
+  let nueva = await cache.match(NUEVA);
+  if(!nueva){                                      // por si se perdió: se vuelve a pedir
+    try{
+      const r = await fetch(new Request(APP, { cache: "reload" }));
+      if(r && r.ok && !r.redirected) nueva = r;
+    }catch(err){}
+  }
+  if(nueva){ await cache.put(APP, nueva.clone()); }
+  await cache.delete(NUEVA);
+}
+
+self.addEventListener("message", function(e){
+  if(!e.data || e.data.tipo !== "jr-aplicar") return;
+  const origen = e.source;
+  e.waitUntil(aplicarNueva().then(function(){
+    if(origen) origen.postMessage({ tipo: "jr-aplicada" });
+  }));
+});
 
 function paginaSinConexion(){
   const html = "<!doctype html><html lang='es'><head><meta charset='utf-8'>" +

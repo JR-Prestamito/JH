@@ -1649,7 +1649,7 @@ function menuOpcionesHtml(id, items){
   }).join("");
   return `<div class="menu-opciones-wrap" id="menu-wrap-${id}">
     <button class="menu-opciones-btn" onclick="toggleMenuOpciones('${id}')" title="Más opciones">${ICONS.dots}</button>
-    <div class="menu-opciones-panel" id="menu-panel-${id}">${filas}</div>
+    <div class="menu-opciones-panel" id="menu-panel-${id}">${filas}<div class="menu-opciones-version">JR Prestamito · versión ${JR_VERSION}</div></div>
   </div>`;
 }
 function toggleMenuOpciones(id){
@@ -4964,20 +4964,42 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "v15 (prueba)";
+const JR_VERSION = "v15";
+// La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
+// y, cuando confirma, se recarga la app.
+function aplicarActualizacion(){
+  const btn = document.querySelector("#jr-aviso-version .jr-av-ok");
+  if(btn){ btn.disabled = true; btn.textContent = "Actualizando…"; }
+  let hecho = false;
+  const ir = function(){
+    if(hecho) return; hecho = true;
+    if(typeof recargarApp === "function") recargarApp(); else location.reload();
+  };
+  window._jrIrAhora = ir;
+  try{
+    if(navigator.serviceWorker && navigator.serviceWorker.controller){
+      navigator.serviceWorker.controller.postMessage({ tipo: "jr-aplicar" });
+      setTimeout(ir, 4000);   // por si no contesta
+      return;
+    }
+  }catch(e){}
+  ir();
+}
 function mostrarAvisoVersion(){
   if(document.getElementById("jr-aviso-version") || !document.body) return;
   const d = document.createElement("div");
   d.id = "jr-aviso-version";
   d.innerHTML = '<span>Hay una versión nueva</span><button class="jr-av-ok">Actualizar</button><button class="jr-av-x" aria-label="Cerrar">✕</button>';
-  d.querySelector(".jr-av-ok").addEventListener("click", function(){ location.reload(); });
+  d.querySelector(".jr-av-ok").addEventListener("click", aplicarActualizacion);
   d.querySelector(".jr-av-x").addEventListener("click", function(){ d.remove(); });
   document.body.appendChild(d);
 }
 if("serviceWorker" in navigator){
   // El sw.js avisa cuando baja una versión nueva; si no la tocas, se verá la próxima vez que abras la app.
   navigator.serviceWorker.addEventListener("message", function(ev){
-    if(ev.data && ev.data.tipo === "jr-nueva-version") mostrarAvisoVersion();
+    if(!ev.data) return;
+    if(ev.data.tipo === "jr-nueva-version") mostrarAvisoVersion();
+    else if(ev.data.tipo === "jr-aplicada" && window._jrIrAhora) window._jrIrAhora();
   });
 }
 // Agrupa las tarjetas de Ajustes en 5 grupos plegables (solo se mueven de lugar; nada se vuelve a crear).
@@ -7227,13 +7249,16 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   [data-theme="dark"] .aj-grupo[open]{border-color:#C9973E;}
 
   /* Aviso de versión nueva */
-  #jr-aviso-version{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 88px);z-index:9500;display:flex;align-items:center;gap:10px;background:#1B2A4A;color:#fff;border:1px solid #C9973E;border-radius:14px;padding:10px 12px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);}
-  #jr-aviso-version span{flex:1;}
+  #jr-aviso-version{position:fixed;left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:380px;box-sizing:border-box;bottom:calc(env(safe-area-inset-bottom,0px) + 88px);z-index:9500;display:flex;align-items:center;justify-content:center;text-align:center;gap:10px;background:#1B2A4A;color:#fff;border:1px solid #C9973E;border-radius:14px;padding:10px 12px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.35);}
+  #jr-aviso-version span{flex:0 1 auto;text-align:center;}
   #jr-aviso-version button{border:0;border-radius:10px;font-weight:700;font-size:14px;padding:9px 14px;cursor:pointer;}
   #jr-aviso-version .jr-av-ok{background:#C9973E;color:#1B2A4A;}
   #jr-aviso-version .jr-av-x{background:transparent;color:#fff;padding:9px 8px;font-size:16px;}
   #aj-version{text-align:center;font-size:12px;color:#7a7f8c;margin:6px 0 14px;}
   [data-theme="dark"] #aj-version{color:#9AA1AE;}
+
+  .menu-opciones-version{position:sticky;bottom:0;margin-top:4px;padding:8px 12px 4px;border-top:1px solid #ece7dc;background:#fff;text-align:center;font-size:11.5px;color:#7a7f8c;}
+  [data-theme="dark"] .menu-opciones-version{background:#1B212C;border-top-color:rgba(255,255,255,.08);color:#9AA1AE;}
 </style>
 <div id="aviso-conexion"></div>
 <script>
