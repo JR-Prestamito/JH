@@ -2059,6 +2059,7 @@ function render(){
   // Eso hacía que, en toda pantalla a la que se llega navegando (como los reportes), las notas
   // largas nunca se recortaran a 2 líneas: el recorte se calculaba sobre la pantalla anterior.
   function despuesDePintar(){
+    agruparAjustes();
     // Reabre las listas que estaban abiertas en esta pantalla (antes de restaurar el scroll).
     (function(){
       const lst = (window._abiertos || {})[claveVista];
@@ -2070,6 +2071,14 @@ function render(){
         d.open = abrir;
       });
     })();
+    if(state._irSeccion){
+      const t = document.getElementById(state._irSeccion);
+      const g = t && t.closest ? t.closest("details.aj-grupo") : null;
+      // Se abre SOLO el grupo destino y se cierran los demás en este mismo momento. Antes, el
+      // grupo que ya estaba abierto se cerraba después (al llegar el aviso de "toggle") y movía
+      // la pantalla: por eso el segundo salto desde el menú ⋮ parecía no hacer nada.
+      if(g) document.querySelectorAll("#app details.aj-grupo").forEach(function(x){ x.open = (x === g); });
+    }
     aplicarTamanoLetra();
     ajustarInicioFijo();
     autoTextareasMensajes();
@@ -4739,6 +4748,7 @@ function menuOpcionesDetallePrestamo(p){
     { icono: ICONS.edit, texto: "Editar préstamo", onclick: `abrirEditarPrestamo('${p.id}')` }
   ];
   if(r.estado==="Activo"){
+    items.push({ icono: ICONS.calculator, texto: "Liquidar anticipado", onclick: `abrirLiquidacion()` });
     items.push({ icono: ICONS.refinance, texto: "Refinanciar este préstamo", onclick: `abrirRefinanciar('${p.id}')` });
   }
   if(p.modificaciones && p.modificaciones.length){
@@ -4894,11 +4904,12 @@ function viewDetallePrestamo(){
       <p class="hint nota-ayuda">${nVenc>1 ? `El monto sugerido ya incluye las ${nVenc} cuotas vencidas${moraCalc>0?" y la mora":""}.` : (moraCalc>0 ? "El monto ya incluye la mora; desmarca la casilla para dejar solo la cuota." : "Déjalo vacío para pagar lo sugerido.")} Un monto menor queda como abono parcial a la cuota. Si pagas de más (después de completarla), el excedente se registra como <b>abono a capital</b> — se puede hacer cualquier día.</p>
     </div>
     ${puedeLiquidarAnticipado ? `
-    <div class="row-card" style="display:block;">
+    <div class="row-card" style="display:none;" id="card-liquidar">
       <p style="font-weight:600;margin:0 0 6px;">Liquidar anticipado</p>
       <p class="hint nota-ayuda" style="margin:0 0 10px;">Calcula el interés real, prorateado por los días que realmente pasaron, si cancelas antes de la fecha de la cuota.</p>
       <label><span>Fecha de liquidación</span><input type="date" id="fechaLiquidacion" value="${hoyISO()}"></label>
       <button class="btn btn-outline" onclick="liquidarAnticipado('${p.id}')">Calcular y liquidar</button>
+      <button class="btn btn-outline" style="margin-top:8px;" onclick="document.getElementById('card-liquidar').style.display='none'">Cancelar</button>
     </div>` : ""}` : ""}
     <div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:8px;">
       <p class="section-title" style="margin:0;">Tabla de amortización</p>
@@ -4951,6 +4962,47 @@ function cargarPDFLibs(cb){
   cargarScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js", function(){
     cargarScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js", cb);
   });
+}
+// Agrupa las tarjetas de Ajustes en 5 grupos plegables (solo se mueven de lugar; nada se vuelve a crear).
+const AJ_GRUPOS = [
+  { k:"ajg-general", t:"General", d:"Negocio, apariencia, letra, zona horaria y moneda",
+    ids:["sec-nombre-negocio","sec-apariencia","sec-letra","sec-zona","sec-moneda"] },
+  { k:"ajg-cobros", t:"Cobros y préstamos", d:"Mora, plazo, modificaciones y reportes",
+    ids:["sec-mora","sec-plazo","sec-umbral","sec-reportes"] },
+  { k:"ajg-recibos", t:"Recibos y mensajes", d:"Recibo, WhatsApp y mensajes de cobro",
+    ids:["sec-recibo","sec-whatsapp","sec-msg-recordatorio","sec-msg-pendiente"] },
+  { k:"ajg-datos", t:"Datos y nube", d:"Sincronizar, respaldo y copia protegida",
+    ids:["sec-sync","sec-respaldo","sec-copia"] },
+  { k:"ajg-seguridad", t:"Seguridad", d:"Clave de acceso y huella",
+    ids:["sec-clave"] }
+];
+function agruparAjustes(){
+  if(state.vista !== "ajustes") return;
+  const app = document.getElementById("app");
+  if(!app || app.querySelector("details.aj-grupo")) return;
+  // Punto de inserción: donde está la primera tarjeta de Ajustes.
+  const todas = [];
+  AJ_GRUPOS.forEach(function(g){ g.ids.forEach(function(id){ const e = document.getElementById(id); if(e) todas.push(e); }); });
+  if(!todas.length) return;
+  let primera = todas[0];
+  todas.forEach(function(e){ if(e.compareDocumentPosition(primera) & Node.DOCUMENT_POSITION_FOLLOWING) primera = e; });
+  const ancla = document.createComment("ajustes");
+  primera.parentNode.insertBefore(ancla, primera);
+  const frag = document.createDocumentFragment();
+  AJ_GRUPOS.forEach(function(g){
+    const tarjetas = g.ids.map(function(id){ return document.getElementById(id); }).filter(Boolean);
+    if(!tarjetas.length) return;
+    const det = document.createElement("details");
+    det.className = "aj-grupo"; det.setAttribute("data-k", g.k);
+    const sum = document.createElement("summary");
+    sum.innerHTML = "<span>"+g.t+"<small>"+g.d+"</small></span>";
+    const cuerpo = document.createElement("div"); cuerpo.className = "aj-grupo-cuerpo";
+    tarjetas.forEach(function(t){ cuerpo.appendChild(t); });
+    det.appendChild(sum); det.appendChild(cuerpo);
+    frag.appendChild(det);
+  });
+  ancla.parentNode.insertBefore(frag, ancla);
+  ancla.remove();
 }
 // ===== Navegador de Redmi/Xiaomi (Mi Browser) =====
 // Su "compartir" abre una hoja de texto vacía (el archivo no llega a WhatsApp) y no sabe
@@ -6070,6 +6122,12 @@ function registrarPago(id){
     mostrarAlerta(msg);
   }, { textoAceptar:"Registrar" });
 }
+function abrirLiquidacion(){
+  const c = document.getElementById("card-liquidar");
+  if(!c) return;
+  c.style.display = "block";
+  c.scrollIntoView({ behavior:"smooth", block:"center" });
+}
 function liquidarAnticipado(id){
   const p = state.prestamos.find(x=>x.id===id);
   const r = resumen(p);
@@ -7132,6 +7190,20 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   /* Menú ⋮: si no cabe (letra grande, celular bajo), la lista se desliza dentro del propio menú */
   .menu-opciones-panel{max-height:calc(100dvh - 190px);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;}
+
+  /* Ajustes ordenado en grupos plegables */
+  .aj-grupo{border:1px solid rgba(27,42,74,.14);border-radius:16px;margin:0 0 12px;background:rgba(255,255,255,.55);}
+  .aj-grupo>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:700;font-size:15px;color:#1B2A4A;-webkit-tap-highlight-color:transparent;}
+  .aj-grupo>summary::-webkit-details-marker{display:none;}
+  .aj-grupo>summary small{display:block;font-weight:400;font-size:12px;color:#7a7f8c;margin-top:2px;}
+  .aj-grupo>summary::after{content:"›";font-size:24px;line-height:1;color:#B89552;transform:rotate(90deg);transition:transform .2s;flex:none;}
+  .aj-grupo[open]{border-color:#B89552;}
+  .aj-grupo[open]>summary::after{transform:rotate(-90deg);}
+  .aj-grupo-cuerpo{padding:0 10px 4px;}
+  [data-theme="dark"] .aj-grupo{border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.03);}
+  [data-theme="dark"] .aj-grupo>summary{color:#E3E5EA;}
+  [data-theme="dark"] .aj-grupo>summary small{color:#9AA1AE;}
+  [data-theme="dark"] .aj-grupo[open]{border-color:#C9973E;}
 </style>
 <div id="aviso-conexion"></div>
 <script>
