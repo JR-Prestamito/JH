@@ -1649,7 +1649,7 @@ function menuOpcionesHtml(id, items){
   }).join("");
   return `<div class="menu-opciones-wrap" id="menu-wrap-${id}">
     <button class="menu-opciones-btn" onclick="toggleMenuOpciones('${id}')" title="Más opciones">${ICONS.dots}</button>
-    <div class="menu-opciones-panel" id="menu-panel-${id}">${filas}<div class="menu-opciones-version">JR Prestamito · versión ${JR_VERSION}</div></div>
+    <div class="menu-opciones-panel" id="menu-panel-${id}"><div class="menu-opciones-lista">${filas}</div><div class="menu-opciones-version">versión ${JR_VERSION}</div></div>
   </div>`;
 }
 function toggleMenuOpciones(id){
@@ -1665,7 +1665,7 @@ function toggleMenuOpciones(id){
       const limite = tabbar ? tabbar.getBoundingClientRect().top : window.innerHeight;
       const alto = limite - panel.getBoundingClientRect().top - 12;
       if(alto > 120) panel.style.maxHeight = alto + "px";
-      panel.scrollTop = 0;
+      const lista = panel.querySelector(".menu-opciones-lista"); if(lista) lista.scrollTop = 0;
     }
   }
 }
@@ -4964,7 +4964,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "v15";
+const JR_VERSION = "15.0";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
@@ -7232,7 +7232,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   [data-theme="dark"] .tabla-card.fila-pago[open] > summary{background:rgba(232,193,113,.09);}
 
   /* Menú ⋮: si no cabe (letra grande, celular bajo), la lista se desliza dentro del propio menú */
-  .menu-opciones-panel{max-height:calc(100dvh - 190px);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;}
+  .menu-opciones-panel{display:flex;flex-direction:column;overflow:hidden;max-height:calc(100dvh - 190px);}
+  .menu-opciones-lista{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;}
 
   /* Ajustes ordenado en grupos plegables */
   .aj-grupo{border:1px solid rgba(27,42,74,.14);border-radius:16px;margin:0 0 12px;background:rgba(255,255,255,.55);}
@@ -7257,8 +7258,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   #aj-version{text-align:center;font-size:12px;color:#7a7f8c;margin:6px 0 14px;}
   [data-theme="dark"] #aj-version{color:#9AA1AE;}
 
-  .menu-opciones-version{position:sticky;bottom:0;margin-top:4px;padding:8px 12px 4px;border-top:1px solid #ece7dc;background:#fff;text-align:center;font-size:11.5px;color:#7a7f8c;}
-  [data-theme="dark"] .menu-opciones-version{background:#1B212C;border-top-color:rgba(255,255,255,.08);color:#9AA1AE;}
+  .menu-opciones-version{flex:none;text-align:center;font-size:12px;color:#7a7f8c;padding:6px 12px 4px;background:none;border:0;}
+  [data-theme="dark"] .menu-opciones-version{color:#9AA1AE;}
 </style>
 <div id="aviso-conexion"></div>
 <script>
