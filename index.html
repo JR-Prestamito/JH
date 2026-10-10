@@ -1140,12 +1140,13 @@ function ahoraEnZonaTexto(){
 function configNube(){
   return { tasaMoraDiaria: state.config.tasaMoraDiaria, moraModo: state.config.moraModo||"dia",
     moraBase: state.config.moraBase||"cuota", zonaHoraria: state.config.zonaHoraria||"", moneda: state.config.moneda||"HNL",
-    reciboCampos: state.config.reciboCampos||{}, reciboCobrador: state.config.reciboCobrador||"", reciboFormaPago: state.config.reciboFormaPago||"Efectivo" };
+    reciboCampos: state.config.reciboCampos||{}, reciboCobrador: state.config.reciboCobrador||"", reciboFormaPago: state.config.reciboFormaPago||"Efectivo",
+    cuentasBancarias: state.config.cuentasBancarias||[] };
 }
 function aplicarConfigNube(c){
   if(!c) return;
   if(c.tasaMoraDiaria!==undefined) state.config.tasaMoraDiaria = c.tasaMoraDiaria;
-  ["moraModo","moraBase","zonaHoraria","moneda","reciboCampos","reciboCobrador","reciboFormaPago"].forEach(k=>{ if(c[k]!==undefined) state.config[k] = c[k]; });
+  ["moraModo","moraBase","zonaHoraria","moneda","reciboCampos","reciboCobrador","reciboFormaPago","cuentasBancarias"].forEach(k=>{ if(c[k]!==undefined) state.config[k] = c[k]; });
 }
 function textoMora(d){
   const t = state.config.tasaMoraDiaria;
@@ -2014,6 +2015,7 @@ function render(){
       { icono: ICONS.calculator, texto:"Zona horaria", onclick: "abrirAjustes('sec-zona')" },
       { icono: ICONS.calculator, texto:"Moneda", onclick: "abrirAjustes('sec-moneda')" },
       { icono: ICONS.edit, texto:"Tamaño de letra", onclick: "abrirAjustes('sec-letra')" },
+      { icono: ICONS.edit, texto:"Mis cuentas bancarias", onclick: "abrirAjustes('sec-cuentas')" },
       { icono: ICONS.refinance, texto:"Umbral de modificación (NIF)", onclick: "abrirAjustes('sec-umbral')" },
       { icono: ICONS.share, texto:"Compartir copia protegida", onclick: "abrirAjustes('sec-copia')" },
     ]);
@@ -2078,6 +2080,8 @@ function render(){
       // grupo que ya estaba abierto se cerraba después (al llegar el aviso de "toggle") y movía
       // la pantalla: por eso el segundo salto desde el menú ⋮ parecía no hacer nada.
       if(g) document.querySelectorAll("#app details.aj-grupo").forEach(function(x){ x.open = (x === g); });
+      const dc = t && t.querySelector ? t.querySelector("details.cuentas-det") : null;
+      if(dc) dc.open = true;
     }
     aplicarTamanoLetra();
     ajustarInicioFijo();
@@ -3754,10 +3758,11 @@ function viewAjustes(){
     </label>
   </div>`}
   ${window.__esCopiaCompartida ? "" : `
+  ${cuentasCardHtml()}
   <div class="row-card" style="display:block;" id="sec-msg-recordatorio">
     <p style="font-weight:600;margin:0 0 4px;">Mensaje de recordatorio (WhatsApp / SMS)</p>
     <p class="hint nota-ayuda" style="margin:0 0 10px;">Este es el mensaje que se manda al presionar "Recordar por WhatsApp" o "Recordar por SMS" en Cartera vencida. Puedes usar estas palabras entre llaves y la app las reemplaza solas: <b>{nombre}</b> (nombre y un apellido del cliente), <b>{nombre_completo}</b>, <b>{primer_nombre}</b>, <b>{codigo}</b>, <b>{cuota}</b>, <b>{monto}</b> (total vencido, sumando todas las cuotas atrasadas y la mora si aplica), <b>{cuotas}</b> (cantidad de cuotas vencidas, ej. "2 cuotas"), <b>{fecha}</b>, <b>{dias}</b>, <b>{negocio}</b> o <b>{nombre del negocio}</b> (tu nombre del negocio de Ajustes).</p>
-    <details class="chips-det" ${(state._chipsOpen||{}).f_mensajeRecordatorio?"open":""} ontoggle="(state._chipsOpen=state._chipsOpen||{}).f_mensajeRecordatorio=this.open"><summary>Palabras para insertar</summary><div class="chips-var"><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{nombre}\')">Nombre</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{nombre del negocio}\')">Negocio</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{codigo}\')">Código</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{cuota}\')">Cuota</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{monto}\')">Monto</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{cuotas}\')">Cuotas</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{fecha}\')">Fecha</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{dias}\')">Días</button></div></details><label style="margin-bottom:8px;"><span>Mensaje</span><textarea id="f_mensajeRecordatorio" rows="2" autocapitalize="sentences" spellcheck="false" oninput="state.config.mensajeRecordatorio=this.value; save(); actualizarPreviewMensajes();">${jrEscapeHtml(state.config.mensajeRecordatorio||PLANTILLA_RECORDATORIO_DEFECTO)}</textarea></label>
+    <details class="chips-det" ${(state._chipsOpen||{}).f_mensajeRecordatorio?"open":""} ontoggle="(state._chipsOpen=state._chipsOpen||{}).f_mensajeRecordatorio=this.open"><summary>Palabras para insertar</summary><div class="chips-var"><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{nombre}\')">Nombre</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{cuentas}\')">Cuentas</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{nombre del negocio}\')">Negocio</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{codigo}\')">Código</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{cuota}\')">Cuota</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{monto}\')">Monto</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{cuotas}\')">Cuotas</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{fecha}\')">Fecha</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{dias}\')">Días</button></div></details><label style="margin-bottom:8px;"><span>Mensaje</span><textarea id="f_mensajeRecordatorio" rows="2" autocapitalize="sentences" spellcheck="false" oninput="state.config.mensajeRecordatorio=this.value; save(); actualizarPreviewMensajes();">${jrEscapeHtml(state.config.mensajeRecordatorio||PLANTILLA_RECORDATORIO_DEFECTO)}</textarea></label>
     <p class="hint" style="margin:0 0 10px;"><b>Vista previa:</b> <span id="prev_recordatorio">${mensajeRecordatorio({codigo:"P-0001"}, {nombre:"María López"}, {cuotaActual:null, cuota:1500, proximaFecha:hoyISO()}, 3, {monto:3000, mora:90, nVenc:2})}</span></p>
     <button class="btn btn-outline" onclick="mostrarConfirmacion('¿Volver al mensaje original?', function(ok){ if(ok){ state.config.mensajeRecordatorio=''; save(); render(); } })">Restablecer mensaje original</button>
   </div>`}
@@ -3765,7 +3770,7 @@ function viewAjustes(){
   <div class="row-card" style="display:block;" id="sec-msg-pendiente">
     <p style="font-weight:600;margin:0 0 4px;">Mensaje de pendiente de cobro (1 día antes)</p>
     <p class="hint nota-ayuda" style="margin:0 0 10px;">Este es el mensaje que se manda al presionar "Recordar por WhatsApp/SMS" en Cartera vencida, en la sección "Pendientes de cobro" (cuotas que vencen mañana, todavía no están atrasadas). Usa las mismas palabras entre llaves: <b>{nombre}</b> (nombre y un apellido del cliente), <b>{nombre_completo}</b>, <b>{primer_nombre}</b>, <b>{codigo}</b>, <b>{cuota}</b>, <b>{fecha}</b>, <b>{negocio}</b> o <b>{nombre del negocio}</b> (tu nombre del negocio de Ajustes).</p>
-    <details class="chips-det" ${(state._chipsOpen||{}).f_mensajePendiente?"open":""} ontoggle="(state._chipsOpen=state._chipsOpen||{}).f_mensajePendiente=this.open"><summary>Palabras para insertar</summary><div class="chips-var"><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'{nombre}\')">Nombre</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'{nombre del negocio}\')">Negocio</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'{codigo}\')">Código</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'{cuota}\')">Cuota</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'{fecha}\')">Fecha</button></div></details><label style="margin-bottom:8px;"><span>Mensaje</span><textarea id="f_mensajePendiente" rows="2" autocapitalize="sentences" spellcheck="false" oninput="state.config.mensajePendiente=this.value; save(); actualizarPreviewMensajes();">${jrEscapeHtml(state.config.mensajePendiente||PLANTILLA_PENDIENTE_DEFECTO)}</textarea></label>
+    <details class="chips-det" ${(state._chipsOpen||{}).f_mensajePendiente?"open":""} ontoggle="(state._chipsOpen=state._chipsOpen||{}).f_mensajePendiente=this.open"><summary>Palabras para insertar</summary><div class="chips-var"><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'{nombre}\')">Nombre</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'{nombre del negocio}\')">Negocio</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'{codigo}\')">Código</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'{cuota}\')">Cuota</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'{cuentas}\')">Cuentas</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'{fecha}\')">Fecha</button></div></details><label style="margin-bottom:8px;"><span>Mensaje</span><textarea id="f_mensajePendiente" rows="2" autocapitalize="sentences" spellcheck="false" oninput="state.config.mensajePendiente=this.value; save(); actualizarPreviewMensajes();">${jrEscapeHtml(state.config.mensajePendiente||PLANTILLA_PENDIENTE_DEFECTO)}</textarea></label>
     <p class="hint" style="margin:0 0 10px;"><b>Vista previa:</b> <span id="prev_pendiente">${mensajePendiente({codigo:"P-0001"}, {nombre:"María López"}, {cuotaActual:null, cuota:1500, proximaFecha:hoyISO()})}</span></p>
     <button class="btn btn-outline" onclick="mostrarConfirmacion('¿Volver al mensaje original?', function(ok){ if(ok){ state.config.mensajePendiente=''; save(); render(); } })">Restablecer mensaje original</button>
   </div>`}
@@ -3869,6 +3874,8 @@ function viewNuevoCliente(){
     <label><span>Celular</span><input id="f_celular" placeholder="9999-9999 (8 dígitos)" value="${ed?ed.celular||"":""}"></label>
     <label><span>Cédula</span><input id="f_cedula" placeholder="0000-0000-00000 (13 dígitos)" value="${ed?ed.cedula||"":""}"></label>
     <label><span>Dirección</span><input id="f_direccion" value="${ed?ed.direccion||"":""}"></label>
+    <label><span>Banco que usa (opcional)</span><input id="f_banco" list="lista-bancos" placeholder="Ej. Atlántida (si usa varios, sepáralos con coma)" value="${ed?jrEscapeHtml(ed.banco||""):""}"></label>
+    <datalist id="lista-bancos">${[...new Set((state.config.cuentasBancarias||[]).map(function(c){ return String(c.banco||"").trim(); }).filter(Boolean))].map(function(b){ return `<option value="${jrEscapeHtml(b)}">`; }).join("")}</datalist>
     <div class="flexrow" style="margin-top:16px;">
       <button class="btn btn-outline" onclick="state.clienteEditId=null; state.vista='lista'; render()">Cancelar</button>
       <button class="btn btn-gold" onclick="guardarCliente()">${ed?"Guardar cambios":"Guardar cliente"}</button>
@@ -3910,7 +3917,8 @@ function guardarCliente(){
     nombre,
     celular,
     cedula,
-    direccion: document.getElementById("f_direccion").value
+    direccion: document.getElementById("f_direccion").value,
+    banco: (document.getElementById("f_banco") ? document.getElementById("f_banco").value.trim() : "")
   };
   if(state.clienteEditId){
     const c = state.clientes.find(x=>x.id===state.clienteEditId);
@@ -4113,6 +4121,7 @@ function mensajePendiente(p, cli, r){
     .replace(/\{codigo\}/g, p.codigo)
     .replace(/\{cuota\}/g, cuota)
     .replace(/\{fecha\}/g, fmtDate(r.proximaFecha))
+    .replace(/\{cuentas\}/g, textoCuentas(cli))
     .replace(/\{nombre del negocio\}/g, nombreApp())
     .replace(/\{negocio\}/g, nombreApp());
 }
@@ -4145,6 +4154,7 @@ function mensajeRecordatorio(p, cli, r, atraso, pendiente){
     .replace(/\{cuotas\}/g, cuotasTexto)
     .replace(/\{fecha\}/g, fmtDate(r.proximaFecha))
     .replace(/\{dias\}/g, `${atraso} día${atraso===1?"":"s"}`)
+    .replace(/\{cuentas\}/g, textoCuentas(cli))
     .replace(/\{nombre del negocio\}/g, nombreApp())
     .replace(/\{negocio\}/g, nombreApp());
 }
@@ -4964,7 +4974,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "15.1";
+const JR_VERSION = "16.1";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
@@ -5012,8 +5022,8 @@ const AJ_GRUPOS = [
     ids:["sec-nombre-negocio","sec-apariencia","sec-letra","sec-zona","sec-moneda"] },
   { k:"ajg-cobros", t:"Cobros y préstamos", d:"Mora, plazo, modificaciones y reportes",
     ids:["sec-mora","sec-plazo","sec-umbral","sec-reportes"] },
-  { k:"ajg-recibos", t:"Recibos y mensajes", d:"Recibo, WhatsApp y mensajes de cobro",
-    ids:["sec-recibo","sec-whatsapp","sec-msg-recordatorio","sec-msg-pendiente"] },
+  { k:"ajg-recibos", t:"Recibos y mensajes", d:"Recibo, WhatsApp, mis cuentas y mensajes de cobro",
+    ids:["sec-recibo","sec-whatsapp","sec-cuentas","sec-msg-recordatorio","sec-msg-pendiente"] },
   { k:"ajg-datos", t:"Datos y nube", d:"Sincronizar, respaldo y copia protegida",
     ids:["sec-sync","sec-respaldo","sec-copia"] },
   { k:"ajg-seguridad", t:"Seguridad", d:"Clave de acceso y huella",
@@ -5050,6 +5060,72 @@ function agruparAjustes(){
   if(ult.length && !document.getElementById("aj-version")){
     ult[ult.length-1].insertAdjacentHTML("afterend", '<p id="aj-version">JR Prestamito · versión ' + JR_VERSION + '</p>');
   }
+}
+// ===== Cuentas bancarias por banco del cliente =====
+// El cliente tiene un campo "Banco que usa". En los mensajes, la palabra {cuentas} se reemplaza
+// por tus cuentas de ESE banco; si el cliente no tiene banco anotado (o no coincide con ninguna
+// de tus cuentas), se mandan todas tus cuentas.
+function normBanco(s){
+  return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
+    .replace(/\bbanco\b/g," ").replace(/[^a-z0-9]+/g," ").trim();
+}
+function bancosDeCliente(cli){
+  return String(cli && cli.banco || "").split(/[,;\/\n]+|\s+y\s+/i).map(normBanco).filter(Boolean);
+}
+function cuentasParaCliente(cli){
+  const todas = (state.config.cuentasBancarias || []).filter(function(c){ return c && String(c.cuenta||"").trim(); });
+  if(!todas.length) return [];
+  const bs = bancosDeCliente(cli);
+  if(!bs.length) return todas;
+  const coinciden = todas.filter(function(c){
+    const nb = normBanco(c.banco);
+    return nb && bs.some(function(b){ return nb === b || nb.indexOf(b) !== -1 || b.indexOf(nb) !== -1; });
+  });
+  return coinciden.length ? coinciden : todas;
+}
+function textoCuentas(cli){
+  return cuentasParaCliente(cli).map(function(c){
+    let t = "• " + (String(c.banco||"").trim() || "Cuenta") + ": " + String(c.cuenta).trim();
+    if(String(c.titular||"").trim()) t += " (" + String(c.titular).trim() + ")";
+    return t;
+  }).join("\n");
+}
+function agregarCuenta(){
+  (state.config.cuentasBancarias = state.config.cuentasBancarias || []).push({ banco:"", cuenta:"", titular:"" });
+  save(); render();
+}
+function editarCuenta(i, campo, valor){
+  const a = state.config.cuentasBancarias || [];
+  if(a[i]) a[i][campo] = valor;
+  save();
+  if(typeof actualizarPreviewMensajes === "function") actualizarPreviewMensajes();
+}
+function quitarCuenta(i){
+  mostrarConfirmacion("¿Quitar esta cuenta?", function(ok){
+    if(ok){ (state.config.cuentasBancarias || []).splice(i, 1); save(); render(); }
+  });
+}
+function cuentasCardHtml(){
+  const cs = state.config.cuentasBancarias || [];
+  const filas = cs.map(function(c, i){
+    return `<div class="cuenta-fila">
+      <input placeholder="Banco (ej. Atlántida)" value="${jrEscapeHtml(c.banco||"")}" oninput="editarCuenta(${i},'banco',this.value)">
+      <input placeholder="Número de cuenta" inputmode="numeric" value="${jrEscapeHtml(c.cuenta||"")}" oninput="editarCuenta(${i},'cuenta',this.value)">
+      <input placeholder="A nombre de (opcional)" value="${jrEscapeHtml(c.titular||"")}" oninput="editarCuenta(${i},'titular',this.value)">
+      <button class="btn btn-outline" onclick="quitarCuenta(${i})">Quitar esta cuenta</button>
+    </div>`;
+  }).join("");
+  const n = cs.length;
+  return `<div class="row-card" style="display:block;" id="sec-cuentas">
+    <details class="cuentas-det" data-k="cuentas-det">
+      <summary><span>Mis cuentas bancarias<small>${n ? n + (n===1 ? " cuenta" : " cuentas") : "Sin cuentas todavía"}</small></span></summary>
+      <div class="cuentas-cuerpo">
+        <p class="hint nota-ayuda" style="margin:0 0 10px;">Anota aquí tus cuentas. En tus mensajes escribe <b>{cuentas}</b> y, al enviar a un cliente, la app pone solo las cuentas del banco que ese cliente usa (el banco se anota en la ficha del cliente). Si el cliente no tiene banco anotado, o no coincide con ninguna de tus cuentas, se envían todas.</p>
+        ${filas || '<p class="hint" style="margin:0 0 10px;">Todavía no hay cuentas.</p>'}
+        <button class="btn btn-outline" onclick="agregarCuenta()">+ Agregar cuenta</button>
+      </div>
+    </details>
+  </div>`;
 }
 // ===== Navegador de Redmi/Xiaomi (Mi Browser) =====
 // Su "compartir" abre una hoja de texto vacía (el archivo no llega a WhatsApp) y no sabe
@@ -7269,6 +7345,16 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   .menu-opciones-version{flex:none;text-align:center;font-size:12px;color:#7a7f8c;padding:6px 12px 4px;background:none;border:0;}
   [data-theme="dark"] .menu-opciones-version{color:#9AA1AE;}
+
+  .cuentas-det>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:600;-webkit-tap-highlight-color:transparent;}
+  .cuentas-det>summary::-webkit-details-marker{display:none;}
+  .cuentas-det>summary small{display:block;font-weight:400;font-size:12px;color:#7a7f8c;margin-top:2px;}
+  .cuentas-det>summary::after{content:"›";font-size:24px;line-height:1;color:#B89552;transform:rotate(90deg);transition:transform .2s;flex:none;}
+  .cuentas-det[open]>summary::after{transform:rotate(-90deg);}
+  .cuentas-cuerpo{margin-top:10px;}
+  [data-theme="dark"] .cuentas-det>summary small{color:#9AA1AE;}
+  .cuenta-fila{border:1px solid rgba(27,42,74,.14);border-radius:12px;padding:10px;margin-bottom:10px;display:grid;gap:8px;}
+  [data-theme="dark"] .cuenta-fila{border-color:rgba(255,255,255,.12);}
 </style>
 <div id="aviso-conexion"></div>
 <script>
