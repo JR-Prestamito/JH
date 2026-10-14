@@ -5496,6 +5496,11 @@ function viewEstadisticas(){
       <div class="est-lectura" id="est-lectura">${lecturaMes(d, sel)}</div>
     </div>
     <div class="est-card">
+      <p class="est-t">De dónde viene lo cobrado</p>
+      <p class="hint" style="margin:0 0 10px;">Acumulado de todos los préstamos.${d.T.enganche > 0.005 ? ' El capital incluye ' + money(d.T.enganche) + ' de enganches.' : ''}</p>
+      ${ing > 0 ? '<div class="est-apilada"><i class="b-oro" style="width:' + (d.T.interes / ing * 100) + '%"></i><i class="b-azul" style="width:' + (d.T.capital / ing * 100) + '%"></i><i class="b-rojo" style="width:' + (d.T.mora / ing * 100) + '%"></i></div><div style="height:12px"></div>' + filaOrigen("Intereses", d.T.interes, "b-oro") + filaOrigen("Capital", d.T.capital, "b-azul") + filaOrigen("Mora", d.T.mora, "b-rojo") : '<p class="hint" style="margin:0;">Todavía no hay cobros.</p>'}
+    </div>
+    <div class="est-card">
       <div class="est-t-fila"><p class="est-t" style="margin:0;">Salud de la cartera</p><span class="est-pill ${salud[1]}">${salud[0]}</span></div>
       <div class="est-dona-fila">
         ${svgDona([{v: d.alDia, c: "est-s-verde"}, {v: d.vencidos, c: "est-s-rojo"}, {v: d.cerrados, c: "est-s-gris"}], d.activos, d.activos === 1 ? "activo" : "activos")}
@@ -5514,11 +5519,6 @@ function viewEstadisticas(){
     <div class="est-card est-prox">
       <div><p class="est-k-l">Por cobrar en los próximos 7 días</p><p class="est-k-v">${money(d.porCobrar7)}</p></div>
       <span class="est-cuenta">${d.nPorCobrar7}<small>${d.nPorCobrar7 === 1 ? "cuota" : "cuotas"}</small></span>
-    </div>
-    <div class="est-card">
-      <p class="est-t">De dónde viene lo cobrado</p>
-      <p class="hint" style="margin:0 0 10px;">Acumulado de todos los préstamos.${d.T.enganche > 0.005 ? ' El capital incluye ' + money(d.T.enganche) + ' de enganches.' : ''}</p>
-      ${ing > 0 ? '<div class="est-apilada"><i class="b-oro" style="width:' + (d.T.interes / ing * 100) + '%"></i><i class="b-azul" style="width:' + (d.T.capital / ing * 100) + '%"></i><i class="b-rojo" style="width:' + (d.T.mora / ing * 100) + '%"></i></div><div style="height:12px"></div>' + filaOrigen("Intereses", d.T.interes, "b-oro") + filaOrigen("Capital", d.T.capital, "b-azul") + filaOrigen("Mora", d.T.mora, "b-rojo") : '<p class="hint" style="margin:0;">Todavía no hay cobros.</p>'}
     </div>
     <div class="est-card">
       <p class="est-t">Clientes con más saldo pendiente</p>
@@ -7691,16 +7691,16 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   .est *{box-sizing:border-box;}
   .est-filtros{display:flex;gap:8px;margin:0 0 14px;flex-wrap:wrap;}
   .est-chip{border:1px solid rgba(27,42,74,.2);background:transparent;color:inherit;border-radius:999px;padding:8px 14px;font-size:13.5px;cursor:pointer;}
-  .est-chip.on{background:#1B2A4A;color:#fff;border-color:#1B2A4A;}
-  .est-hero{background:linear-gradient(155deg,#1B2A4A 0%,#26396a 100%);color:#fff;border-radius:20px;padding:16px 16px 14px;margin:0 0 12px;box-shadow:0 6px 18px rgba(27,42,74,.22);}
-  .est-h-l{margin:0 0 4px;font-size:12.5px;color:rgba(255,255,255,.72);}
-  .est-h-v{margin:0;font-size:28px;font-weight:700;letter-spacing:-.02em;color:#fff;word-break:break-word;}
-  .est-hero .est-delta{display:inline-block;margin-top:6px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.12);font-size:12px;font-weight:600;}
+  .est-chip.on{background:#1B2A4A;color:#F3F0E8;border-color:#1B2A4A;}
+  .est-hero{background:linear-gradient(155deg,#1B2A4A 0%,#26396a 100%);color:#F3F0E8;border-radius:20px;padding:16px 16px 14px;margin:0 0 12px;box-shadow:0 6px 18px rgba(27,42,74,.22);}
+  .est-h-l{margin:0 0 4px;font-size:12.5px;color:rgba(243,240,232,.72);}
+  .est-h-v{margin:0;font-size:28px;font-weight:700;letter-spacing:-.02em;color:#F3F0E8;word-break:break-word;}
+  .est-hero .est-delta{display:inline-block;margin-top:6px;padding:3px 9px;border-radius:999px;background:rgba(243,240,232,.12);font-size:12px;font-weight:600;}
   .est-hero .est-delta.sube{color:#8FE0B0;} .est-hero .est-delta.baja{color:#FFB3AC;}
   .est-spark{display:block;width:100%;height:64px;margin:10px 0 8px;}
-  .est-h-pie{display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid rgba(255,255,255,.14);padding-top:10px;}
-  .est-h-pie span{display:block;font-size:11.5px;color:rgba(255,255,255,.65);margin-bottom:2px;}
-  .est-h-pie b{font-size:15px;color:#fff;font-weight:700;}
+  .est-h-pie{display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid rgba(243,240,232,.14);padding-top:10px;}
+  .est-h-pie span{display:block;font-size:11.5px;color:rgba(243,240,232,.65);margin-bottom:2px;}
+  .est-h-pie b{font-size:15px;color:#F3F0E8;font-weight:700;}
   .est-h-pie b.pos{color:#8FE0B0;} .est-h-pie b.neg{color:#FFB3AC;}
   .est-kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 12px;}
   .est-kpi,.est-card{background:var(--e-card);border:1px solid var(--e-bd);border-radius:16px;padding:14px;min-width:0;box-shadow:0 1px 3px rgba(27,42,74,.05);}
@@ -7767,11 +7767,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     .est-kpi:nth-child(2){animation-delay:.04s;} .est-kpi:nth-child(3){animation-delay:.08s;} .est-kpi:nth-child(4){animation-delay:.12s;}
     @keyframes estIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
   }
-  [data-theme="dark"] .est{--e-mut:#9AA1AE;--e-bd:rgba(255,255,255,.1);--e-card:#1B212C;--e-track:rgba(255,255,255,.1);}
+  [data-theme="dark"] .est{--e-mut:#9AA1AE;--e-bd:rgba(243,240,232,.1);--e-card:#1B212C;--e-track:rgba(243,240,232,.1);}
   [data-theme="dark"] .est-kpi,[data-theme="dark"] .est-card{box-shadow:none;}
-  [data-theme="dark"] .est-chip{border-color:rgba(255,255,255,.2);}
+  [data-theme="dark"] .est-chip{border-color:rgba(243,240,232,.2);}
   [data-theme="dark"] .est-chip.on{background:#C9973E;color:#1B2A4A;border-color:#C9973E;}
-  [data-theme="dark"] .est-hero{background:linear-gradient(155deg,#1E2740 0%,#243055 100%);box-shadow:none;border:1px solid rgba(255,255,255,.08);}
+  [data-theme="dark"] .est-hero{background:linear-gradient(155deg,#1E2740 0%,#243055 100%);box-shadow:none;border:1px solid rgba(243,240,232,.08);}
   [data-theme="dark"] .est .est-cap{fill:#3FA878;} [data-theme="dark"] .est .est-int{fill:#8FD1AB;} [data-theme="dark"] .est-cap-p,[data-theme="dark"] .b-azul{background:#3FA878;} [data-theme="dark"] .est-int-p,[data-theme="dark"] .b-oro{background:#8FD1AB;} [data-theme="dark"] .est .est-pre{fill:#6C86B8;} [data-theme="dark"] .est-pre-p{background:#6C86B8;}
   [data-theme="dark"] .est-ico{background:rgba(232,193,113,.14);color:#E8C171;}
   [data-theme="dark"] .est-pill.ok{color:#74D39A;} [data-theme="dark"] .est-pill.med{color:#E8C171;} [data-theme="dark"] .est-pill.mal{color:#F0908A;}
