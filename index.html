@@ -5280,6 +5280,7 @@ function etiquetaMesClave(k){
 // Cada mes suma exactamente lo mismo que "Cobrado" de ese mes.
 function composicionMensual(claves){
   const out = {};
+  let estimado = false;   // true si algún pago de la ventana no guardó su desglose (se reparte con la proporción del préstamo)
   claves.forEach(function(k){ out[k] = { capital:0, interes:0, mora:0 }; });
   state.prestamos.forEach(function(p){
     const d = desglosePagado(p), a = desgloseCobrosArchivados(p);
@@ -5292,10 +5293,13 @@ function composicionMensual(claves){
       const monto = Number(pg.monto) || 0;
       o.mora += Number(pg.mora) || 0;
       if(pg.tipo === "enganche" || pg.tipo === "abono_capital"){ o.capital += monto; return; }
-      const i = (pg.interes !== undefined && pg.capital !== undefined) ? Math.max(0, Math.min(monto, Number(pg.interes) || 0)) : monto * ratio;
+      const exacto = (pg.interes !== undefined && pg.capital !== undefined);
+      if(!exacto && monto > 0.005) estimado = true;
+      const i = exacto ? Math.max(0, Math.min(monto, Number(pg.interes) || 0)) : monto * ratio;
       o.interes += i; o.capital += monto - i;
     });
   });
+  Object.defineProperty(out, "__estimado", { value: estimado, enumerable: false });
   return out;
 }
 // "Todo" usa exactamente la misma fuente que la pantalla de Inicio (capital incluye enganches).
@@ -5358,7 +5362,7 @@ function datosEstadisticas(rango){
   const topTotal = top.reduce(function(s, x){ return s + x.saldo; }, 0);
   const top5 = top.slice(0, 5), top5Suma = top5.reduce(function(s, x){ return s + x.saldo; }, 0);
   const T = composicionTodo(), compM = composicionMensual(claves);
-  return { claves: claves, compM: compM, cobM: cobM, preM: preM, cobrado: cobrado, mora: mora, prestado: prestado, nPagos: nPagos, nDesem: nDesem,
+  return { claves: claves, compM: compM, estimado: compM.__estimado === true, cobM: cobM, preM: preM, cobrado: cobrado, mora: mora, prestado: prestado, nPagos: nPagos, nDesem: nDesem,
     cobradoAnt: cobradoAnt, capitalCalle: capitalCalle, saldoActivo: saldoActivo, saldoRiesgo: saldoRiesgo,
     activos: activos, alDia: alDia, vencidos: vencidos, cerrados: cerrados, aging: aging,
     porCobrar7: porCobrar7, nPorCobrar7: nPorCobrar7, top: top5, nClientesSaldo: top.length,
@@ -5447,6 +5451,7 @@ function viewEstadisticas(){
     delta = '<span class="est-delta ' + (pct >= 0 ? "sube" : "baja") + '">' + (pct >= 0 ? "▲ " : "▼ ") + Math.abs(pct) + '% vs. período anterior</span>';
   }
   const flujo = d.cobrado - d.prestado;
+  const hayMora = d.claves.some(function(k){ return d.compM[k].mora > 0.005; });
   const pctVenc = d.activos ? Math.round(d.vencidos / d.activos * 100) : 0;
   const pctRiesgo = d.saldoActivo > 0 ? Math.round(d.saldoRiesgo / d.saldoActivo * 100) : 0;
   const salud = pctRiesgo === 0 ? ["Excelente", "ok"] : pctRiesgo <= 10 ? ["Saludable", "ok"] : pctRiesgo <= 25 ? ["Vigilar", "med"] : ["En riesgo", "mal"];
@@ -5464,13 +5469,7 @@ function viewEstadisticas(){
     return '<div class="est-fila est-rank"><span class="est-pos">' + (i + 1) + '</span><div class="est-rank-c"><div class="est-fila-t"><span class="est-nom">' + jrEscapeHtml(c.nombre) + '</span><b>' + money(c.saldo) + '</b></div><div class="est-barra"><i class="b-azul" style="width:' + Math.max(4, Math.round(c.saldo / maxTop * 100)) + '%"></i></div></div></div>';
   }).join("") + (d.nClientesSaldo > 5 ? '<p class="hint" style="margin:6px 0 0;">Estos 5 clientes concentran el ' + Math.round(d.concTop5 * 100) + '% del saldo pendiente.</p>' : '') : '<p class="hint" style="margin:0;">Todavía no hay saldos pendientes.</p>';
   const hayDatos = state.prestamos.length > 0;
-  const iconoCobro = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
   const iconoRecibos = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
-  const iconoInteres = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/></svg>';
-  const iconoActivos = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg>';
-  const iconoEnganche = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>';
-  const iconoMora = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
-  const iconoTicket = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg>';
   const iconoCalle = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>';
   return `<div class="est">
     <div class="est-filtros">${chip(3, "3 meses")}${chip(6, "6 meses")}${chip(12, "12 meses")}${chip(0, "Todo")}</div>
@@ -5492,8 +5491,9 @@ function viewEstadisticas(){
     <div class="est-card">
       <p class="est-t">Cobrado por mes: capital e interés</p>
       ${svgBarrasMensuales(d, sel)}
-      <div class="est-leyenda"><span><i class="est-cap-p"></i>Capital</span><span><i class="est-int-p"></i>Interés</span><span><i class="est-pre-p"></i>Prestado</span><span class="est-tip">Toca un mes para ver el detalle</span></div>
+      <div class="est-leyenda"><span><i class="est-cap-p"></i>Capital</span><span><i class="est-int-p"></i>Interés</span>${hayMora ? '<span><i class="est-mor-p"></i>Mora</span>' : ''}<span><i class="est-pre-p"></i>Prestado</span><span class="est-tip">Toca un mes para ver el detalle</span></div>
       <div class="est-lectura" id="est-lectura">${lecturaMes(d, sel)}</div>
+      ${d.estimado ? '<p class="hint" style="margin:8px 0 0;">* En algunos pagos antiguos no quedó guardado cuánto fue capital y cuánto interés; para esos el reparto es aproximado. El total cobrado de cada mes es exacto.</p>' : ''}
     </div>
     <div class="est-card">
       <p class="est-t">De dónde viene lo cobrado</p>
@@ -7063,6 +7063,137 @@ function recargarApp(){
     sx = null; sy = null;
   }, { passive: true });
 })();
+
+const LIC_SUPABASE_URL = "https://kbskmdtgwnagdigtdlze.supabase.co";
+const LIC_SUPABASE_KEY = "sb_publishable_AnwNz39_voG8r7XnjCG6Vg_75jK9Aa7";
+const LIC_PLAN = "pro"; // esta copia del archivo solo acepta licencias del plan "pro"
+const LIC_DIAS_GRACIA = 5; // días que puede seguir usándose sin internet antes de exigir reconexión
+
+function licDeviceId(){
+  let id = localStorage.getItem("jrp_device_id");
+  if(!id){
+    id = (crypto.randomUUID ? crypto.randomUUID() : ("dev-" + Date.now() + "-" + Math.random().toString(16).slice(2)));
+    localStorage.setItem("jrp_device_id", id);
+  }
+  return id;
+}
+
+async function licVerificar(clave){
+  const deviceId = licDeviceId();
+  let data;
+  // Sin internet: no se espera ni se intenta la conexión (abre al instante).
+  if(typeof navigator !== "undefined" && navigator.onLine === false){
+    return { ok:false, red:true, motivo:"No se pudo conectar para verificar la licencia. Revisa tu conexión a internet e intenta de nuevo." };
+  }
+  // Con wifi pero sin internet real, el fetch podía quedarse colgado; se corta a los 8 s.
+  const ctl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+  const tmo = ctl ? setTimeout(function(){ ctl.abort(); }, 8000) : null;
+  try{
+    const resp = await fetch(`${LIC_SUPABASE_URL}/rest/v1/rpc/verificar_licencia`, {
+      signal: ctl ? ctl.signal : undefined,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: LIC_SUPABASE_KEY,
+        Authorization: `Bearer ${LIC_SUPABASE_KEY}`
+      },
+      body: JSON.stringify({ p_clave: clave, p_dispositivo: deviceId, p_plan: LIC_PLAN })
+    });
+    if(!resp.ok) throw new Error("http " + resp.status);
+    data = await resp.json();
+    if(tmo) clearTimeout(tmo);
+  } catch(e){
+    if(tmo) clearTimeout(tmo);
+    return { ok:false, red:true, motivo:"No se pudo conectar para verificar la licencia. Revisa tu conexión a internet e intenta de nuevo." };
+  }
+  if(data === "ok") return { ok:true };
+  if(data === "invalida") return { ok:false, motivo:"Esa clave de licencia no existe." };
+  if(data === "inactiva") return { ok:false, motivo:"Esta licencia está desactivada." };
+  if(data === "vencida") return { ok:false, motivo:"Esta licencia venció. Contacta al proveedor de la app para renovarla." };
+  if(data === "otro_dispositivo") return { ok:false, motivo:"Esta licencia ya está en uso en otro dispositivo." };
+  if(data === "producto_incorrecto") return { ok:false, motivo:"Esa clave no es para esta versión de la app." };
+  return { ok:false, red:true, motivo:"No se pudo verificar la licencia. Intenta de nuevo." };
+}
+
+// La pantalla de licencia va en un recuadro APARTE, encima de la app (nunca reemplaza
+// document.body): así, cuando la licencia resulta válida, el <div id="app"> de abajo
+// sigue intacto y la app se puede dibujar. Antes se hacía document.body.innerHTML,
+// que borraba el #app y dejaba la app congelada en "Verificando licencia…".
+function licPantalla(html){
+  let ov = document.getElementById("lic-overlay");
+  if(!ov){ ov = document.createElement("div"); ov.id = "lic-overlay"; document.body.appendChild(ov); }
+  ov.style.cssText = "position:fixed;inset:0;z-index:99999;background:#1B2A4A;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;text-align:center;";
+  ov.innerHTML = html;
+}
+function licQuitarPantalla(){
+  const ov = document.getElementById("lic-overlay");
+  if(ov) ov.remove();
+}
+
+function licPedirClave(mensajeError){
+  licPantalla(`
+<div style="font-size:40px;margin-bottom:6px;">🔒</div>
+<h2 style="color:#fff;margin:0 0 6px;font-size:18px;">Licencia requerida</h2>
+<p style="color:#B9C2D6;font-size:13px;margin:0 0 16px;max-width:280px;">Ingresa la clave de licencia para usar esta app en este dispositivo.</p>
+${mensajeError ? `<p style="color:#F3A0A0;font-size:13px;margin:0 0 10px;max-width:280px;">${mensajeError}</p>` : ""}
+<input id="licClaveInput" type="text" placeholder="Clave de licencia" autocapitalize="off" autocorrect="off" style="width:240px;text-align:center;font-size:16px;padding:12px;border-radius:12px;border:none;margin-bottom:10px;">
+<button id="licEntrarBtn" style="width:240px;padding:12px;border-radius:12px;border:none;background:#C9973E;color:#1B2A4A;font-weight:700;font-size:15px;">Entrar</button>
+`);
+  const input = document.getElementById("licClaveInput");
+  const btn = document.getElementById("licEntrarBtn");
+  input.focus();
+  async function intentar(){
+    const clave = (input.value || "").trim();
+    if(!clave) return;
+    btn.disabled = true; btn.textContent = "Verificando…";
+    const r = await licVerificar(clave);
+    if(r.ok){
+      localStorage.setItem("jrp_licencia", clave);
+      localStorage.setItem("jrp_licencia_ok_ts", String(Date.now()));
+      licQuitarPantalla();
+      render();
+      if(typeof autoSincronizarAlAbrir === "function") autoSincronizarAlAbrir();
+    } else {
+      btn.disabled = false; btn.textContent = "Entrar";
+      licPedirClave(r.motivo);
+    }
+  }
+  btn.addEventListener("click", intentar);
+  input.addEventListener("keydown", function(e){ if(e.key === "Enter") intentar(); });
+}
+
+async function licArrancar(){
+  const claveGuardada = localStorage.getItem("jrp_licencia");
+  if(!claveGuardada){ licPedirClave(); return; }
+  licPantalla(`<div style="font-size:40px;margin-bottom:6px;">🔒</div><p style="color:#B9C2D6;font-size:13px;">Verificando licencia…</p>`);
+  const r = await licVerificar(claveGuardada);
+  if(r.ok){
+    localStorage.setItem("jrp_licencia_ok_ts", String(Date.now()));
+    licQuitarPantalla();
+    render();
+    if(typeof autoSincronizarAlAbrir === "function") autoSincronizarAlAbrir();
+    return;
+  }
+  if(r.red){
+    // No se pudo conectar: si se validó bien hace poco, se deja seguir trabajando sin
+    // internet dentro de un margen de días; pasado ese margen, hace falta conexión.
+    let ultimaOk = Number(localStorage.getItem("jrp_licencia_ok_ts") || 0);
+    // Licencias activadas antes de que existiera esta marca de fecha: se parte desde hoy.
+    if(!ultimaOk){ ultimaOk = Date.now(); localStorage.setItem("jrp_licencia_ok_ts", String(ultimaOk)); }
+    const diasSinValidar = (Date.now() - ultimaOk) / (1000*60*60*24);
+    if(ultimaOk && diasSinValidar < LIC_DIAS_GRACIA){
+      licQuitarPantalla();
+      render();
+      return;
+    }
+    licPedirClave(r.motivo);
+    return;
+  }
+  // Respuesta definitiva del servidor (no es un problema de conexión): se borra la
+  // clave guardada y se vuelve a pedir, mostrando el motivo real.
+  localStorage.removeItem("jrp_licencia");
+  licPedirClave(r.motivo);
+}
 
 render();
 if(typeof autoSincronizarAlAbrir === "function") autoSincronizarAlAbrir();
