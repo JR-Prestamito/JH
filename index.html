@@ -5378,7 +5378,7 @@ function svgTendencia(d){
   vals.forEach(function(v, i){ ln += (i ? "L" : "M") + px(i).toFixed(1) + " " + py(v).toFixed(1) + " "; });
   const area = ln + "L" + px(n - 1).toFixed(1) + " " + H + " L" + px(0).toFixed(1) + " " + H + " Z";
   const ult = n - 1;
-  return '<svg class="est-spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
+  return '<svg class="est-spark" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">' +
     '<defs><linearGradient id="estG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8FD1AB" stop-opacity=".45"/><stop offset="1" stop-color="#E8C171" stop-opacity="0"/></linearGradient></defs>' +
     '<path d="' + area + '" fill="url(#estG)"/><path d="' + ln + '" fill="none" stroke="#8FD1AB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' +
     '<circle cx="' + px(ult).toFixed(1) + '" cy="' + py(vals[ult]).toFixed(1) + '" r="3.2" fill="#8FD1AB"/></svg>';
@@ -5485,7 +5485,7 @@ function viewEstadisticas(){
       </div>
     </div>
     <div class="est-kpis">
-      <div class="est-kpi"><span class="est-ico">${iconoCalle}</span><p class="est-k-l">Capital en la calle</p><p class="est-k-v">${money(d.capitalCalle)}</p></div>
+      <div class="est-kpi"><span class="est-ico">${iconoCalle}</span><p class="est-k-l">Capital en la calle</p><p class="est-k-v">${money(d.capitalCalle)}</p><p class="est-sub">Solo capital, sin intereses</p></div>
       <div class="est-kpi"><span class="est-ico">${iconoRecibos}</span><p class="est-k-l">Cantidad de cobros</p><p class="est-k-v">${d.nPagos}</p></div>
     </div>
     <div class="est-card">
@@ -5510,7 +5510,7 @@ function viewEstadisticas(){
           <div><i class="b-gris"></i><span>Cerrados</span><b>${d.cerrados}</b></div>
         </div>
       </div>
-      <div class="est-dos"><div><p class="est-k-l">Morosidad (préstamos)</p><p class="est-k-v">${pctVenc}%</p></div><div><p class="est-k-l">Saldo en riesgo</p><p class="est-k-v">${money(d.saldoRiesgo)}</p><p class="est-sub">${pctRiesgo}% del saldo activo</p></div></div>
+      <div class="est-dos"><div><p class="est-k-l">Morosidad (préstamos)</p><p class="est-k-v">${pctVenc}%</p></div><div><p class="est-k-l">Saldo en riesgo</p><p class="est-k-v">${money(d.saldoRiesgo)}</p><p class="est-sub">Incluye intereses pendientes · ${pctRiesgo}% del saldo activo</p></div></div>
     </div>
     <div class="est-card">
       <p class="est-t">Antigüedad de la mora</p>
@@ -7828,7 +7828,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   .est-h-v{margin:0;font-size:28px;font-weight:700;letter-spacing:-.02em;color:#F3F0E8;word-break:break-word;}
   .est-hero .est-delta{display:inline-block;margin-top:6px;padding:3px 9px;border-radius:999px;background:rgba(243,240,232,.12);font-size:12px;font-weight:600;}
   .est-hero .est-delta.sube{color:#8FE0B0;} .est-hero .est-delta.baja{color:#FFB3AC;}
-  .est-spark{display:block;width:100%;height:64px;margin:10px 0 8px;}
+  .est-spark{display:block;width:100%;height:auto;margin:10px 0 8px;}
   .est-h-pie{display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid rgba(243,240,232,.14);padding-top:10px;}
   .est-h-pie span{display:block;font-size:11.5px;color:rgba(243,240,232,.65);margin-bottom:2px;}
   .est-h-pie b{font-size:15px;color:#F3F0E8;font-weight:700;}
