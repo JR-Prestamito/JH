@@ -3138,8 +3138,14 @@ function listaDesembolsos(){
     // fecha guardada en fechaInicioAnterior de la PRIMERA modificación, no p.fechaInicio; si
     // no se hace así, el desembolso original y el "adicional" de esa modificación terminan
     // mostrando la misma fecha (la más reciente) en vez de sus fechas reales.
-    const fechaDesembolsoOriginal = (p.modificaciones && p.modificaciones.length && p.modificaciones[0].fechaInicioAnterior)
-      ? p.modificaciones[0].fechaInicioAnterior
+    // Si esa primera modificación no guardó fechaInicioAnterior (modificaciones registradas con
+    // una versión anterior), NO se puede usar p.fechaInicio: cada nueva modificación lo mueve a
+    // la fecha más reciente y el desembolso original "viajaba" al mes de la última
+    // modificación (se veía duplicado ese mes y bajaba el mes real). En ese caso se usa la
+    // fecha de la propia primera modificación, que nunca cambia.
+    const _m0 = (p.modificaciones && p.modificaciones.length) ? p.modificaciones[0] : null;
+    const fechaDesembolsoOriginal = _m0
+      ? (_m0.fechaInicioAnterior || _m0.fecha || p.fechaInicio)
       : p.fechaInicio;
     eventos.push({
       fecha: fechaDesembolsoOriginal, codigo: p.codigo, cliente: cli?cli.nombre:"—",
