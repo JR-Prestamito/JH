@@ -394,7 +394,7 @@
   #app:has(.v3-home){background:radial-gradient(120% 55% at 50% 0%,rgba(205,214,235,.75) 0%,rgba(205,214,235,0) 70%),radial-gradient(100% 45% at 50% 100%,rgba(201,151,62,.14) 0%,rgba(201,151,62,0) 75%),linear-gradient(180deg,#EEF1F7 0%,#F5F3EE 55%,#F3EEE3 100%);}
   [data-theme="dark"] #app:has(.v3-home){background:radial-gradient(120% 55% at 50% 0%,rgba(60,80,130,.35) 0%,rgba(60,80,130,0) 70%),radial-gradient(100% 45% at 50% 100%,rgba(201,151,62,.10) 0%,rgba(201,151,62,0) 75%),linear-gradient(180deg,#141a28 0%,#12161f 100%);}
   [data-theme="dark"] .v3-sec{color:rgba(255,255,255,.5);}
-  .v3-home{--ex:0px;flex:none;display:flex;flex-direction:column;gap:calc(10px + var(--ex) * .25);}
+  .v3-home{--ex:0px;--gx:0px;flex:none;display:flex;flex-direction:column;gap:calc(10px + var(--gx));}
   .v3-home .v3-hero{margin:0;}
   .v3-sec{margin:0;padding-left:4px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#8a8680;font-weight:700;}
   .v3-rep{background:linear-gradient(155deg,var(--navy) 0%,#0F1A30 100%);border:1px solid rgba(255,255,255,.07);color:#fff;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease;box-shadow:0 6px 14px -6px rgba(15,20,36,.45),inset 0 1px 0 rgba(255,255,255,.08);}
@@ -3514,6 +3514,7 @@ function ajustarInicioFijo(){
   function medir(){
     home.style.zoom = 1;
     home.style.setProperty("--ex", "0px");
+    home.style.setProperty("--gx", "0px");
     const fin = tabbar ? tabbar.getBoundingClientRect().top : window.innerHeight;
     const disp = fin - home.getBoundingClientRect().top - GAP_ABAJO;
     const nat = home.offsetHeight;
@@ -3526,11 +3527,12 @@ function ajustarInicioFijo(){
   if(z === null) return;
   if(z < 0.88 && reps){ reps.style.display = "none"; z = medir(); if(z === null) return; }
   home.style.zoom = Math.max(0.45, Math.min(1, z));
-  // Si sobra espacio, se reparte entre las secciones: tarjetas un poco más altas (todas por
-  // igual, así siguen uniformes) y más aire entre secciones. Tope: 28 px por tarjeta.
+  // Si sobra espacio (pantallas altas, sobre todo con la app instalada) las tarjetas YA NO se
+  // estiran: se quedan con su tamaño normal y el sobrante se reparte en más aire entre
+  // secciones (tope 28 px por hueco). Lo que aún sobre se reparte arriba y abajo (ver abajo).
   if(z >= 1 && sobra > 0){
-    const sens = (reps && reps.style.display !== "none") ? 3.75 : 2.75;
-    home.style.setProperty("--ex", Math.min(sobra / sens, 28).toFixed(1) + "px");
+    const huecos = (reps && reps.style.display !== "none") ? 3 : 2;
+    home.style.setProperty("--gx", Math.min(sobra / huecos, 28).toFixed(1) + "px");
   }
   // Si sobra espacio, se reparte entre arriba y abajo (arriba crece máx. 30 px).
   if(pill){
@@ -3539,7 +3541,7 @@ function ajustarInicioFijo(){
     const fin = tabbar ? tabbar.getBoundingClientRect().top : window.innerHeight;
     const arriba = hr.top - txt.getBoundingClientRect().bottom;
     const abajo = fin - hr.bottom;
-    pill.style.marginBottom = (11 + Math.max(0, Math.min((abajo - arriba) / 2, 30))) + "px";
+    pill.style.marginBottom = (11 + Math.max(0, Math.min((abajo - arriba) / 2, 34))) + "px";
   }
 }
 window.addEventListener("resize", ajustarInicioFijo);
