@@ -886,6 +886,7 @@
   .ini-bars .hoy small::after{content:"";position:absolute;left:50%;bottom:-5px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--i-verde);}
   .ini-bars{padding-bottom:5px;}
   .ini-mini{margin-top:calc(-5px - var(--ex) * .15);}
+  .ini-bars .pasado i{opacity:.18 !important;} .ini-bars .pasado small{opacity:.55;}
 </style>
 </head>
 <body>
@@ -2464,7 +2465,7 @@ function render(){
   let html = `<header><div style="display:flex;align-items:center;justify-content:space-between;">
     <div style="display:flex;align-items:center;">`;
   if(state.tab==="prestamos" && (state.vista==="detalle" || state.vista==="cartera" || state.vista==="refinanciar" || state.vista==="nuevo" || state.vista==="calculadora" || state.vista==="contrato" || state.vista==="colaRecordatorio")){
-    html += `<button class="backbtn" onclick="${state.vista==="nuevo"?`window._nf=null; state.vista=${(window._nf&&window._nf.editId)?"'detalle'":"'lista'"}; render();`:(state.vista==="calculadora"?"window._calc=null; state.vista='lista'; render();":(state.vista==="contrato"?"state.vista='detalle'; render();":(state.vista==="colaRecordatorio"?"salirDeColaRecordatorios()":"volverLista()")))}">‹</button>`;
+    html += `<button class="backbtn" onclick="${state.vista==="nuevo"?`window._nf=null; state.vista=${(window._nf&&window._nf.editId)?"'detalle'":"'lista'"}; render();`:(state.vista==="calculadora"?"window._calc=null; state.vista='lista'; render();":(state.vista==="contrato"?"state.vista='detalle'; render();":(state.vista==="colaRecordatorio"?"salirDeColaRecordatorios()":"volverAtras()")))}">‹</button>`;
   }
   if(state.tab==="clientes" && state.vista==="nuevo"){
     html += `<button class="backbtn" onclick="state.clienteEditId=null; state.vista='lista'; render();">‹</button>`;
@@ -3946,7 +3947,7 @@ function viewInicio(){
       else if(r.proximaFecha){
         // lo que vence hoy y en los próximos 6 días (7 días en total), por día
         const dv = diasParaVencer(r.proximaFecha);
-        if(dv !== null && dv >= 0 && dv <= 6){ const m = Number(r.faltaEnCuotaActual) || (r.cuotaActual ? r.cuotaActual.cuota : 0); semana[dv] += m; montoSem += m; nSem++; }
+        if(dv !== null && dv >= 0 && dv <= diasHastaDomingo()){ const m = Number(r.faltaEnCuotaActual) || (r.cuotaActual ? r.cuotaActual.cuota : 0); semana[(6 - diasHastaDomingo()) + dv] += m; montoSem += m; nSem++; }
       }
     }
   });
@@ -3969,8 +3970,8 @@ function viewInicio(){
   <div><p class="v3-sec">Para cobrar</p>
     <div class="ini-cobrar">
       ${cardCobrar("Vencido", vencidos, montoVenc, vencidos > 0 ? "mal" : "cero", "verCartera()", " atrasados")}
-      <div class="ini-cob sem" onclick="verProximosAVencer()"><div><span class="ini-cob-l">Próximos 7 días</span><b class="ini-cob-m">${money(montoSem)}</b><span class="ini-cob-n">${nSem > 0 ? nSem + (nSem === 1 ? " cuota" : " cuotas") : "Ninguna"}</span></div>
-        <div class="ini-bars">${semana.map(function(m, i){ const mx = Math.max.apply(null, semana) || 1; const dia = ["D","L","M","M","J","V","S"][new Date(addDays(hoyISO(), i) + "T12:00:00").getDay()]; return '<div class="' + (m > 0 ? "has " : "") + (i === 0 ? "hoy" : "") + '"><i style="height:' + (m > 0 ? Math.max(14, m / mx * 100) : 8) + '%"></i><small>' + dia + '</small></div>'; }).join("")}</div></div>
+      <div class="ini-cob sem" onclick="verProximosAVencer()"><div><span class="ini-cob-l">Esta semana</span><b class="ini-cob-m">${money(montoSem)}</b><span class="ini-cob-n">${nSem > 0 ? nSem + (nSem === 1 ? " cuota" : " cuotas") : "Ninguna"}</span></div>
+        <div class="ini-bars">${semana.map(function(m, i){ const mx = Math.max.apply(null, semana) || 1; const hoyI = 6 - diasHastaDomingo(); const dia = ["L","M","M","J","V","S","D"][i]; return '<div class="' + (m > 0 ? "has " : "") + (i === hoyI ? "hoy " : "") + (i < hoyI ? "pasado" : "") + '"><i style="height:' + (m > 0 ? Math.max(14, m / mx * 100) : 8) + '%"></i><small>' + dia + '</small></div>'; }).join("")}</div></div>
     </div></div>
   <div class="ini-mini">
     <div onclick="irA('prestamos')"><span>Activos</span><b>${activos}</b></div>
@@ -3991,6 +3992,7 @@ function viewInicio(){
   // Lleva a la Cartera vencida y salta directo al bloque "Próximos a vencer" (que ahora
 // queda al final de esa pantalla, debajo de lo ya vencido).
 function verProximosAVencer(){
+  state._origenInicio = (state.tab === "inicio"); state._detalleDesde = null;
   state.tab = "prestamos"; state.vista = "cartera";
   state._irSeccion = "sec-proximos-vencer";
   render();
@@ -4540,15 +4542,24 @@ function viewPrestamos(){
   });
   return html;
 }
-function verDetalle(id){ state.tab="prestamos"; state.seleccionId=id; state.vista="detalle"; state.paginaAmortizacion=null; render(); }
+function verDetalle(id){ state._detalleDesde = (state.tab==="prestamos" && state.vista==="cartera") ? "cartera" : null; state.tab="prestamos"; state.seleccionId=id; state.vista="detalle"; state.paginaAmortizacion=null; render(); }
 function cambiarPaginaAmortizacion(delta){ state.paginaAmortizacion = Math.max(0, (state.paginaAmortizacion||0) + delta); render(); }
+// Botón ‹ del encabezado en Préstamos: si se llegó desde Inicio (Vencido / Próximos 7 días), regresa a Inicio;
+// si se abrió un préstamo desde esa lista, regresa primero a la lista.
+function volverAtras(){
+  if(state.vista === "detalle" && state._detalleDesde === "cartera"){ state._detalleDesde = null; state._irSeccion = null; state.vista = "cartera"; render(); return; }
+  if(state.vista === "cartera" && state._origenInicio){ state._origenInicio = false; state.tab = "inicio"; state.vista = "lista"; render(); return; }
+  volverLista();
+}
 function volverLista(){ state.vista="lista"; render(); }
 // Ir a una sección desde el inicio (igual que tocar la pestaña de abajo).
-function irA(tab){ state.tab = tab; state.vista = "lista"; state.q = ""; state.qPrestamos = ""; render(); }
-function verCartera(){ state.tab="prestamos"; state.vista="cartera"; render(); }
+function irA(tab){ state._origenInicio = false; state._detalleDesde = null; state.tab = tab; state.vista = "lista"; state.q = ""; state.qPrestamos = ""; render(); }
+function verCartera(){ state._origenInicio = (state.tab==="inicio"); state._detalleDesde = null; state.tab="prestamos"; state.vista="cartera"; render(); }
 
 const PLANTILLA_RECORDATORIO_DEFECTO = "Hola {nombre}, su préstamo {codigo} tiene {cuotas} vencida(s) desde el {fecha} ({dias} de atraso), por un total de {monto}{detalleProxima}. Le agradecemos ponerse al día lo antes posible. Cualquier duda, con gusto le atendemos. ¡Gracias!";
 const PLANTILLA_PENDIENTE_DEFECTO = "Hola {nombre}, le recordamos que su préstamo {codigo} tiene una cuota de {cuota} pendiente de cobro, con fecha {fecha}. Cualquier duda, con gusto le atendemos. ¡Gracias!";
+// Días que faltan para el domingo de esta semana (la semana va de lunes a domingo).
+function diasHastaDomingo(){ return 6 - ((new Date(hoyISO() + "T12:00:00").getDay() + 6) % 7); }
 function diasParaVencer(fecha){
   if(!fecha) return null;
   const hoy = hoyISO();
@@ -4819,7 +4830,7 @@ function viewColaRecordatorio(){
 }
 function viewCartera(){
   const prox = state.prestamos.map(p=>({p, r:resumen(p)}))
-    .filter(x=>x.r.estado==="Activo" && x.r.proximaFecha && diasParaVencer(x.r.proximaFecha) >= 0 && diasParaVencer(x.r.proximaFecha) <= 6)
+    .filter(x=>x.r.estado==="Activo" && x.r.proximaFecha && diasParaVencer(x.r.proximaFecha) >= 0 && diasParaVencer(x.r.proximaFecha) <= diasHastaDomingo())
     .sort((a,b)=> new Date(a.r.proximaFecha) - new Date(b.r.proximaFecha));
   const vencidos = state.prestamos.map(p=>({p, r:resumen(p)}))
     .filter(x=>x.r.estado==="Activo" && x.r.proximaFecha && diasAtraso(x.r.proximaFecha)>0)
@@ -5509,7 +5520,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "24.0";
+const JR_VERSION = "24.1";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
@@ -5857,7 +5868,7 @@ function datosEstadisticas(rango){
       } else {
         alDia++;
         const dv = r.proximaFecha ? diasParaVencer(r.proximaFecha) : null;
-        if(dv !== null && dv >= 0 && dv <= 6){ porCobrar7 += Number(r.faltaEnCuotaActual) || (r.cuotaActual ? r.cuotaActual.cuota : 0); nPorCobrar7++; }
+        if(dv !== null && dv >= 0 && dv <= diasHastaDomingo()){ porCobrar7 += Number(r.faltaEnCuotaActual) || (r.cuotaActual ? r.cuotaActual.cuota : 0); nPorCobrar7++; }
       }
       porCliente[p.clienteId] = (porCliente[p.clienteId] || 0) + saldo;
     } else cerrados++;
@@ -6027,7 +6038,7 @@ function viewEstadisticas(){
       <div><p class="est-k-l">Pendiente por cobrar</p><p class="est-k-v">${money(d.saldoActivo)}</p><p class="est-sub">Capital + intereses que faltan de los préstamos activos · sin mora</p></div>
     </div>
     <div class="est-card est-prox">
-      <div><p class="est-k-l">Por cobrar en los próximos 7 días</p><p class="est-k-v">${money(d.porCobrar7)}</p></div>
+      <div><p class="est-k-l">Por cobrar esta semana (hasta el domingo)</p><p class="est-k-v">${money(d.porCobrar7)}</p></div>
       <span class="est-cuenta">${d.nPorCobrar7}<small>${d.nPorCobrar7 === 1 ? "cuota" : "cuotas"}</small></span>
     </div>
     <div class="est-card">
@@ -7475,7 +7486,7 @@ function viewRecibo(){
 function viewTabbar(){
   const items = [["inicio","Inicio","home"],["clientes","Clientes","users"],["prestamos","Préstamos","landmark"],["pagos","Pagos","wallet"]];
   return `<div class="tabbar">${items.map(([id,label,icon])=>`
-    <button class="tab-btn ${state.tab===id?"active":""}" onclick="state.tab='${id}'; state.vista='lista'; render()">
+    <button class="tab-btn ${state.tab===id?"active":""}" onclick="state._origenInicio=false; state._detalleDesde=null; state.tab='${id}'; state.vista='lista'; render()">
       <span class="tab-icon-wrap">${ICONS[icon]}</span><span>${label}</span>
     </button>`).join("")}</div>`;
 }
