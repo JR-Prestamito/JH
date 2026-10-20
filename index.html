@@ -394,7 +394,7 @@
   #app:has(.v3-home){background:radial-gradient(120% 55% at 50% 0%,rgba(205,214,235,.75) 0%,rgba(205,214,235,0) 70%),radial-gradient(100% 45% at 50% 100%,rgba(201,151,62,.14) 0%,rgba(201,151,62,0) 75%),linear-gradient(180deg,#EEF1F7 0%,#F5F3EE 55%,#F3EEE3 100%);}
   [data-theme="dark"] #app:has(.v3-home){background:radial-gradient(120% 55% at 50% 0%,rgba(60,80,130,.35) 0%,rgba(60,80,130,0) 70%),radial-gradient(100% 45% at 50% 100%,rgba(201,151,62,.10) 0%,rgba(201,151,62,0) 75%),linear-gradient(180deg,#141a28 0%,#12161f 100%);}
   [data-theme="dark"] .v3-sec{color:rgba(255,255,255,.5);}
-  .v3-home{--ex:0px;--gx:0px;flex:none;display:flex;flex-direction:column;gap:calc(10px + var(--gx));}
+  .v3-home{--ex:0px;flex:none;display:flex;flex-direction:column;gap:calc(10px + var(--ex) * .25);}
   .v3-home .v3-hero{margin:0;}
   .v3-sec{margin:0;padding-left:4px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#8a8680;font-weight:700;}
   .v3-rep{background:linear-gradient(155deg,var(--navy) 0%,#0F1A30 100%);border:1px solid rgba(255,255,255,.07);color:#fff;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease;box-shadow:0 6px 14px -6px rgba(15,20,36,.45),inset 0 1px 0 rgba(255,255,255,.08);}
@@ -411,41 +411,6 @@
   .v3-home .v3-tile .v3-ico svg,.v3-rep .v3-ico svg{width:16px;height:16px;}
   .v3-home .v3-tile .t-val{order:2;margin:0;font-size:20px;line-height:1.1;}
   .v3-home .v3-tile .t-lbl,.v3-rep p{order:3;margin:2px 0 0;min-height:2.3em;font-size:10.5px;font-weight:600;line-height:1.15;display:flex;align-items:flex-start;justify-content:center;}
-
-  /* ===== Inicio con más información y menos espacio vacío ===== */
-  .v3-home .v3-hero{padding:14px 16px 13px;}
-  .v3-prog{margin-top:11px;}
-  .v3-prog-bar{height:6px;border-radius:6px;background:rgba(255,255,255,.14);overflow:hidden;}
-  .v3-prog-bar i{display:block;height:100%;min-width:3px;border-radius:6px;background:linear-gradient(90deg,#C9973E,#E8C171);}
-  .v3-prog-txt{display:flex;justify-content:space-between;gap:8px;margin:6px 0 0;font-size:11px;color:rgba(255,255,255,.7);}
-  .v3-prog-txt b{color:var(--gold);font-weight:700;}
-  .v3-home .v3-mini>div{height:calc(50px + var(--ex) * .5);}
-  .v3-home .v3-tile{height:calc(88px + var(--ex));}
-  .v3-home .v3-rep{height:calc(68px + var(--ex));}
-  .v3-sec-row{display:flex;justify-content:space-between;align-items:baseline;}
-  .v3-ver{font-size:11.5px;font-weight:700;color:var(--gold);cursor:pointer;padding:0 4px;-webkit-tap-highlight-color:transparent;}
-  .v3-prox{margin:6px 0 0;background:#fff;border:1px solid rgba(27,42,74,.09);border-radius:16px;box-shadow:0 6px 14px -8px rgba(15,20,36,.28);padding:2px 12px;}
-  .v3-prow{display:flex;align-items:center;gap:10px;height:42px;border-top:1px solid rgba(27,42,74,.07);cursor:pointer;-webkit-tap-highlight-color:transparent;}
-  .v3-prow:first-child{border-top:0;}
-  .v3-pav{flex:none;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:rgba(27,42,74,.09);color:var(--navy);}
-  .v3-pav.vp-rojo{background:rgba(192,67,59,.13);color:#C0433B;}
-  .v3-pav.vp-oro{background:rgba(201,151,62,.18);color:#8A6416;}
-  .v3-pmid{flex:1;min-width:0;}
-  .v3-pname{margin:0;font-size:13px;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .v3-psub{margin:1px 0 0;font-size:11px;color:#8a8680;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .v3-psub.vp-rojo{color:#C0433B;font-weight:600;}
-  .v3-psub.vp-oro{color:#8A6416;font-weight:600;}
-  .v3-pmon{margin:0;font-size:13px;font-weight:700;color:var(--navy);white-space:nowrap;}
-  .v3-pvacio{margin:0;padding:12px 0;text-align:center;font-size:12.5px;color:#8a8680;}
-  [data-theme="dark"] .v3-prox{background:#1B212C;border-color:rgba(255,255,255,.08);box-shadow:none;}
-  [data-theme="dark"] .v3-prow{border-top-color:rgba(255,255,255,.07);}
-  [data-theme="dark"] .v3-pav{background:rgba(255,255,255,.1);color:#D5D8DE;}
-  [data-theme="dark"] .v3-pav.vp-rojo{background:rgba(240,144,138,.16);color:#F0908A;}
-  [data-theme="dark"] .v3-pav.vp-oro{background:rgba(232,193,113,.16);color:#E8C171;}
-  [data-theme="dark"] .v3-pname,[data-theme="dark"] .v3-pmon{color:#E3E5EA;}
-  [data-theme="dark"] .v3-psub{color:#9AA1AE;}
-  [data-theme="dark"] .v3-psub.vp-rojo{color:#F0908A;}
-  [data-theme="dark"] .v3-psub.vp-oro{color:#E8C171;}
 
   /* ===== Ronda 2: eliminar cliente, íconos de pagos y modo oscuro dorado ===== */
   .btn-eliminar-cli{width:36px;height:36px;flex:none;display:inline-flex;align-items:center;justify-content:center;padding:0;border-radius:12px;background:rgba(192,80,77,.08);border:1px solid rgba(192,80,77,.22);color:#b9504d;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease,background .12s ease;}
@@ -3544,13 +3509,11 @@ function ajustarInicioFijo(){
   const tabbar = document.querySelector("#app > .tabbar");
   const pill = document.querySelector("#app .sync-pill");
   const reps = home.querySelector(".v3-reps-wrap");
-  const prox = home.querySelector(".v3-prox-wrap");
   const GAP_ABAJO = 18;
   let sobra = 0;
   function medir(){
     home.style.zoom = 1;
     home.style.setProperty("--ex", "0px");
-    home.style.setProperty("--gx", "0px");
     const fin = tabbar ? tabbar.getBoundingClientRect().top : window.innerHeight;
     const disp = fin - home.getBoundingClientRect().top - GAP_ABAJO;
     const nat = home.offsetHeight;
@@ -3559,18 +3522,15 @@ function ajustarInicioFijo(){
   }
   if(pill) pill.style.marginBottom = "";
   if(reps) reps.style.display = "";
-  if(prox) prox.style.display = "";
   let z = medir();
   if(z === null) return;
-  if(z < 0.92 && prox){ prox.style.display = "none"; z = medir(); if(z === null) return; }
   if(z < 0.88 && reps){ reps.style.display = "none"; z = medir(); if(z === null) return; }
   home.style.zoom = Math.max(0.45, Math.min(1, z));
-  // Si sobra espacio (pantallas altas, sobre todo con la app instalada) las tarjetas YA NO se
-  // estiran: se quedan con su tamaño normal y el sobrante se reparte en más aire entre
-  // secciones (tope 28 px por hueco). Lo que aún sobre se reparte arriba y abajo (ver abajo).
+  // Si sobra espacio, se reparte entre las secciones: tarjetas un poco más altas (todas por
+  // igual, así siguen uniformes) y más aire entre secciones. Tope: 28 px por tarjeta.
   if(z >= 1 && sobra > 0){
-    const huecos = Math.max(1, Array.from(home.children).filter(e => e.style.display !== "none").length - 1);
-    home.style.setProperty("--gx", Math.min(sobra / huecos, 28).toFixed(1) + "px");
+    const sens = (reps && reps.style.display !== "none") ? 3.75 : 2.75;
+    home.style.setProperty("--ex", Math.min(sobra / sens, 28).toFixed(1) + "px");
   }
   // Si sobra espacio, se reparte entre arriba y abajo (arriba crece máx. 30 px).
   if(pill){
@@ -3579,7 +3539,7 @@ function ajustarInicioFijo(){
     const fin = tabbar ? tabbar.getBoundingClientRect().top : window.innerHeight;
     const arriba = hr.top - txt.getBoundingClientRect().bottom;
     const abajo = fin - hr.bottom;
-    pill.style.marginBottom = (11 + Math.max(0, Math.min((abajo - arriba) / 2, 34))) + "px";
+    pill.style.marginBottom = (11 + Math.max(0, Math.min((abajo - arriba) / 2, 30))) + "px";
   }
 }
 window.addEventListener("resize", ajustarInicioFijo);
@@ -3601,7 +3561,6 @@ function viewInicio(){
   if(state.vista==="ajustesClave") return viewAjustesClave();
   if(state.vista==="ajustes") return viewAjustes();
   let prestado=0, activos=0, vencidos=0, proximos=0, capitalActual=0;
-  const cobros=[];
   state.prestamos.forEach(p=>{
     const r = resumen(p);
     prestado += p.refinanciaDe ? (Number(p.adicionalAlRefinanciar)||0) : capitalOriginalDesembolsado(p);
@@ -3609,71 +3568,45 @@ function viewInicio(){
     capitalActual += Number(r.capitalPendiente)||0;
     if(r.estado==="Activo"){
       activos++;
-      if(r.proximaFecha){ const pen = calcularPendiente(p, r, false); cobros.push({ p, fecha:r.proximaFecha, monto:pen.monto, n:pen.nVenc, atr:diasAtraso(r.proximaFecha) }); }
       if(r.proximaFecha && diasAtraso(r.proximaFecha)>0) vencidos++;
       else if(r.proximaFecha && [0,1].includes(diasParaVencer(r.proximaFecha))) proximos++;
     }
   });
   const T = desgloseIngresosCobrados();
 
-  // Barra de avance: qué parte del capital prestado ya regresó.
-  const capCobrado = T.capital + T.enganches;
-  const pctRec = prestado>0 ? Math.max(0, Math.min(100, capCobrado/prestado*100)) : 0;
-  const progHtml = prestado>0
-    ? `<div class="v3-prog"><div class="v3-prog-bar"><i style="width:${pctRec.toFixed(1)}%"></i></div>
-        <p class="v3-prog-txt"><span>Capital recuperado <b>${pctRec.toFixed(1)}%</b></span><span>${money(capCobrado)} de ${money(prestado)}</span></p></div>`
-    : "";
-  // Próximos cobros: lo más urgente primero (vencidos, luego los que vencen pronto).
-  const escH = t => String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  cobros.sort((a,b)=> a.fecha<b.fecha ? -1 : a.fecha>b.fecha ? 1 : 0);
-  const filasProx = cobros.slice(0,3).map(c=>{
-    const cli = state.clientes.find(x=>x.id===c.p.clienteId);
-    const nom = cli ? cli.nombre : "—";
-    let txt, cls;
-    if(c.atr>0){ txt = c.n>1 ? `${c.n} cuotas vencidas · ${c.atr} d` : `Vencida · ${c.atr} d de atraso`; cls = "vp-rojo"; }
-    else {
-      const d = diasParaVencer(c.fecha);
-      txt = d===0 ? "Vence hoy" : d===1 ? "Vence mañana" : `Vence en ${d} días`;
-      cls = d<=1 ? "vp-oro" : "vp-normal";
-    }
-    const ini = (String(nom).trim()[0]||"?").toUpperCase();
-    return `<div class="v3-prow" onclick="verDetalle('${c.p.id}')"><span class="v3-pav ${cls}">${escH(ini)}</span><div class="v3-pmid"><p class="v3-pname">${escH(nom)}</p><p class="v3-psub ${cls}">${escH(c.p.codigo)} · ${txt}</p></div><p class="v3-pmon">${money(c.monto)}</p></div>`;
-  }).join("");
-  const proxHtml = `<div class="v3-prox-wrap"><div class="v3-sec-row"><p class="v3-sec">Próximos cobros</p><a class="v3-ver" onclick="verCartera()">Ver todos ›</a></div>
-    <div class="v3-prox">${filasProx || '<p class="v3-pvacio">No hay cobros pendientes</p>'}</div></div>`;
-
   const modoOscuro = !!state.config.temaOscuro;
   let html = estadoSyncInicio();
-  html += `<div class="v3-home"><div class="v3-hero">
-    <div class="v3-top" onclick="irA('prestamos')">
-      <div><p class="v3-lbl">Capital actual prestado</p>
-      <p class="v3-val"><em>${simboloMoneda()}</em> ${money(capitalActual).replace(/^\S+\s*/,"")}</p></div>
-      <span class="v3-ico">${ICO_INI.banco}</span>
+  const cobCap = T.capital + T.enganches, cobInt = T.intereses, cobTot = cobCap + cobInt;
+  const pCap = cobTot > 0.005 ? (cobCap / cobTot * 100) : 0, pInt = cobTot > 0.005 ? (cobInt / cobTot * 100) : 0;
+  const colCartera = function(n, lbl, cls, fn){ return '<div class="ini-col ' + cls + '" onclick="' + fn + '"><b>' + n + '</b><span>' + lbl + '</span></div>'; };
+  const filaRep = function(txt, fn, extra){ return '<div class="ini-rep' + (extra ? ' ' + extra : '') + '" onclick="' + fn + '"><span>' + txt + '</span><i>›</i></div>'; };
+  html += `<div class="v3-home ini"><div class="ini-hero">
+    <div class="ini-top" onclick="irA('prestamos')">
+      <p class="ini-lbl">Capital actual prestado</p>
+      <p class="ini-val"><em>${simboloMoneda()}</em> ${money(capitalActual).replace(/^\S+\s*/,"")}</p>
+      <p class="ini-note">Lo que tus clientes todavía te deben en capital</p>
     </div>
-    ${progHtml}
-  </div>
-  <div><p class="v3-sec">Detalles de capital</p>
-    <div class="v3-mini">
-      <div onclick="state._reporteDesdeInicio=true;abrirReporteDesembolsos()"><span class="v3-ico">${ICO_INI.dinero}</span><div><p class="m-lbl">Capital prestado</p><p class="m-val">${money(prestado)}</p></div></div>
-      <div onclick="state._reporteDesdeInicio=true;abrirReporteHistorialPagos()"><span class="v3-ico">${ICO_INI.billetera}</span><div><p class="m-lbl">Total cobrado</p><p class="m-val" style="color:var(--gold);">${money(T.capital+T.enganches+T.intereses)}</p></div></div>
-      <div onclick="state._reporteDesdeInicio=true;abrirReporteHistorialPagos()"><span class="v3-ico">${ICO_INI.billetera}</span><div><p class="m-lbl">Capital cobrado</p><p class="m-val">${money(T.capital+T.enganches)}</p></div></div>
-      <div onclick="state._reporteDesdeInicio=true;abrirReporteHistorialPagos()"><span class="v3-ico">${ICO_INI.tendencia}</span><div><p class="m-lbl">Intereses cobrados</p><p class="m-val" style="color:var(--gold);">${money(T.intereses)}</p></div></div>
+    <div class="ini-dos">
+      <div onclick="state._reporteDesdeInicio=true;abrirReporteDesembolsos()"><span>Prestado</span><b>${money(prestado)}</b></div>
+      <div onclick="state._reporteDesdeInicio=true;abrirReporteHistorialPagos()"><span>Cobrado</span><b>${money(cobTot)}</b></div>
     </div>
+    <div class="ini-barra" onclick="state._reporteDesdeInicio=true;abrirReporteHistorialPagos()"><i class="c" style="width:${pCap}%"></i><i class="i" style="width:${pInt}%"></i></div>
+    <div class="ini-leyenda"><span><i class="c"></i>Capital ${money(cobCap)}</span><span><i class="i"></i>Intereses ${money(cobInt)}</span></div>
   </div>
-  <div><p class="v3-sec">Estado de cartera</p>
-    <div class="v3-tiles">
-      <div class="v3-tile t-verde" onclick="irA('prestamos')"><span class="v3-ico">${ICO_INI.tendencia}</span><p class="t-lbl">Préstamos activos</p><p class="t-val">${activos}</p></div>
-      <div class="v3-tile t-rojo" onclick="verCartera()"><span class="v3-ico">${ICO_INI.alerta}</span><p class="t-lbl">Cuotas vencidas</p><p class="t-val">${vencidos}</p></div>
-      <div class="v3-tile t-azul" onclick="verProximosAVencer()"><span class="v3-ico">${ICO_INI.reloj}</span><p class="t-lbl">Próximos a vencer</p><p class="t-val">${proximos}</p></div>
-      <div class="v3-tile t-dorado" onclick="irA('clientes')"><span class="v3-ico">${ICO_INI.personas}</span><p class="t-lbl">Clientes registrados</p><p class="t-val">${state.clientes.length}</p></div>
+  <div><p class="v3-sec">Cartera</p>
+    <div class="ini-cartera">
+      ${colCartera(activos, "Activos", "ok", "irA('prestamos')")}
+      ${colCartera(vencidos, "Vencidas", vencidos > 0 ? "mal" : "cero", "verCartera()")}
+      ${colCartera(proximos, "Por vencer", proximos > 0 ? "aviso" : "cero", "verProximosAVencer()")}
+      ${colCartera(state.clientes.length, "Clientes", "", "irA('clientes')")}
     </div></div>
-  ${proxHtml}
   <div class="v3-reps-wrap"><p class="v3-sec">Reportes</p>
-    <div class="v3-reps">
-      <div class="v3-rep" onclick="state._reporteDesdeInicio=true;abrirReporteHistorialPagos()"><span class="v3-ico">${ICO_INI.billetera}</span><p>Historial de pagos</p></div>
-      <div class="v3-rep" onclick="state._reporteDesdeInicio=true;abrirReporteDesembolsos()"><span class="v3-ico">${ICO_INI.dinero}</span><p>Desembolsos</p></div>
-      <div class="v3-rep" onclick="state._reporteDesdeInicio=true;abrirEstadoResultados()"><span class="v3-ico">${ICO_INI.tendencia}</span><p>Estado de resultados</p></div>
-      <div class="v3-rep" onclick="state._reporteDesdeInicio=true;abrirReportePDF()"><span class="v3-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></span><p>Reporte PDF</p></div>
+    <div class="ini-reps">
+      ${filaRep("Estadísticas", "irEstadisticas()", "ini-rep-main")}
+      ${filaRep("Historial de pagos", "state._reporteDesdeInicio=true;abrirReporteHistorialPagos()")}
+      ${filaRep("Desembolsos", "state._reporteDesdeInicio=true;abrirReporteDesembolsos()")}
+      ${filaRep("Estado de resultados", "state._reporteDesdeInicio=true;abrirEstadoResultados()")}
+      ${filaRep("Reporte PDF", "state._reporteDesdeInicio=true;abrirReportePDF()")}
     </div></div>
   </div>`;
   return html;
@@ -5199,7 +5132,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "17.0";
+const JR_VERSION = "18.0";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
@@ -8108,6 +8041,45 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   [data-theme="dark"] .est-lectura{background:rgba(143,209,171,.1);}
   [data-theme="dark"] .est .est-dona-n{fill:#D5D8DE;}
   [data-theme="dark"] .b-granate{background:#B8504A;}
+
+  /* ===== Inicio v17.1: calmado, crema y verde confianza ===== */
+  #app:has(.v3-home){background:radial-gradient(120% 40% at 50% 0%,rgba(47,125,87,.07) 0%,rgba(47,125,87,0) 70%),#F7F5F0;}
+  [data-theme="dark"] #app:has(.v3-home){background:radial-gradient(120% 40% at 50% 0%,rgba(63,168,120,.10) 0%,rgba(63,168,120,0) 70%),#12161f;}
+  .ini{--i-card:#FBF9F4;--i-bd:#E5E1D8;--i-tx:#1B2A4A;--i-mut:#7a7f8c;--i-verde:#2F7D57;gap:calc(14px + var(--ex) * .3);}
+  .ini .v3-sec{padding-left:2px;margin-bottom:7px;color:var(--i-mut);}
+  .ini-hero{border-radius:22px;padding:calc(18px + var(--ex) * .3) 18px 16px;color:#F3F0E8;background:radial-gradient(circle at 92% 0%,rgba(255,255,255,.14) 0,rgba(255,255,255,0) 55%),linear-gradient(150deg,#2E7D5A 0%,#1D5A41 100%);box-shadow:0 10px 24px -12px rgba(29,90,65,.55);}
+  .ini-top{cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .ini-lbl{margin:0 0 4px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:rgba(243,240,232,.74);}
+  .ini-val{margin:0;font-size:31px;line-height:1.1;font-weight:700;letter-spacing:-.01em;color:#F3F0E8;}
+  .ini-val em{font-style:normal;color:#BFE5CF;margin-right:2px;}
+  .ini-note{margin:6px 0 0;font-size:11.5px;color:rgba(243,240,232,.62);}
+  .ini-dos{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0 11px;padding-top:13px;border-top:1px solid rgba(243,240,232,.16);}
+  .ini-dos>div{cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .ini-dos span{display:block;font-size:11.5px;color:rgba(243,240,232,.66);margin-bottom:2px;}
+  .ini-dos b{font-size:16px;font-weight:700;color:#F3F0E8;}
+  .ini-barra{display:flex;height:10px;border-radius:6px;overflow:hidden;background:rgba(243,240,232,.2);cursor:pointer;}
+  .ini-barra i{display:block;height:100%;} .ini-barra .c{background:#F3F0E8;} .ini-barra .i{background:#8FD1AB;}
+  .ini-leyenda{display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:11.5px;color:rgba(243,240,232,.8);}
+  .ini-leyenda span{display:inline-flex;align-items:center;gap:6px;min-width:0;}
+  .ini-leyenda i{width:9px;height:9px;border-radius:3px;flex:none;} .ini-leyenda .c{background:#F3F0E8;} .ini-leyenda .i{background:#8FD1AB;}
+  .ini-cartera{display:grid;grid-template-columns:repeat(4,1fr);background:var(--i-card);border:1px solid var(--i-bd);border-radius:18px;box-shadow:0 1px 3px rgba(27,42,74,.05);}
+  .ini-col{padding:calc(13px + var(--ex) * .35) 4px;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;border-left:1px solid var(--i-bd);}
+  .ini-col:first-child{border-left:none;} .ini-col:active{background:rgba(47,125,87,.07);}
+  .ini-col b{display:block;font-size:22px;line-height:1.1;font-weight:700;color:var(--i-tx);}
+  .ini-col span{display:block;margin-top:3px;font-size:11px;color:var(--i-mut);font-weight:600;}
+  .ini-col.ok b{color:var(--i-verde);} .ini-col.mal b{color:#C0564A;} .ini-col.aviso b{color:#B7791F;} .ini-col.cero b{color:var(--i-mut);opacity:.7;}
+  .ini-reps{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .ini-rep{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:calc(44px + var(--ex) * .25);padding:0 14px;border-radius:14px;background:var(--i-card);border:1px solid var(--i-bd);color:var(--i-tx);font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease;box-shadow:0 1px 3px rgba(27,42,74,.04);}
+  .ini-rep:active{transform:scale(.97);}
+  .ini-rep i{font-style:normal;font-size:18px;line-height:1;color:var(--i-verde);flex:none;}
+  .ini-rep-main{grid-column:1 / -1;background:#E4EFE8;border-color:#CFE3D6;color:#1D5A41;}
+  [data-theme="dark"] .ini{--i-card:#1B212C;--i-bd:rgba(255,255,255,.09);--i-tx:#D5D8DE;--i-mut:#9AA1AE;--i-verde:#8FD1AB;}
+  [data-theme="dark"] .ini-hero{background:radial-gradient(circle at 92% 0%,rgba(255,255,255,.08) 0,rgba(255,255,255,0) 55%),linear-gradient(150deg,#1F6045 0%,#164634 100%);box-shadow:none;border:1px solid rgba(255,255,255,.07);}
+  [data-theme="dark"] .ini-cartera,[data-theme="dark"] .ini-rep{box-shadow:none;}
+  [data-theme="dark"] .ini-col.mal b{color:#F0908A;} [data-theme="dark"] .ini-col.aviso b{color:#E8C171;}
+  [data-theme="dark"] .ini-rep-main{background:rgba(143,209,171,.12);border-color:rgba(143,209,171,.22);color:#8FD1AB;}
+  .est-hero{background:linear-gradient(155deg,#2E7D5A 0%,#1D5A41 100%) !important;box-shadow:0 10px 24px -12px rgba(29,90,65,.55) !important;}
+  [data-theme="dark"] .est-hero{background:linear-gradient(155deg,#1F6045 0%,#164634 100%) !important;box-shadow:none !important;}
 </style>
 <div id="aviso-conexion"></div>
 <script>
