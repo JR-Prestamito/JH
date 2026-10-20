@@ -837,6 +837,49 @@
   .est-hero{background:linear-gradient(155deg,#2E7D5A 0%,#1D5A41 100%) !important;box-shadow:0 10px 24px -12px rgba(29,90,65,.55) !important;}
   [data-theme="dark"] .est-hero{background:linear-gradient(155deg,#1F6045 0%,#164634 100%) !important;box-shadow:none !important;}
 
+  /* ===== Inicio v19: Para cobrar ===== */
+  .ini-cobrar{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .ini-cob{background:var(--i-card);border:1px solid var(--i-bd);border-radius:18px;padding:calc(8px + var(--ex) * .3) 13px;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 1px 3px rgba(27,42,74,.05);min-width:0;}
+  .ini-cob:active{transform:scale(.98);}
+  .ini-cob-l{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;color:var(--i-mut);}
+  .ini-cob-l i{font-style:normal;font-size:17px;line-height:1;color:var(--i-verde);}
+  .ini-cob-m{display:block;margin:3px 0 1px;font-size:clamp(16px,5vw,19px);font-weight:700;color:var(--i-tx);letter-spacing:-.01em;white-space:nowrap;}
+  .ini-cob-n{display:block;font-size:12px;color:var(--i-mut);}
+  .ini-cob.mal .ini-cob-m{color:#B0392F;}
+  .ini-cob.aviso .ini-cob-m{color:#8a6416;}
+  .ini-cob.cero .ini-cob-m{color:var(--i-verde);}
+  .ini-mini{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .ini-mini>div{display:flex;align-items:center;justify-content:space-between;background:var(--i-card);border:1px solid var(--i-bd);border-radius:14px;padding:calc(5px + var(--ex) * .15) 14px;font-size:13px;color:var(--i-mut);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .ini-mini>div:active{transform:scale(.98);}
+  .ini-mini b{font-size:16px;color:var(--i-tx);}
+  [data-theme="dark"] .ini-cob{box-shadow:none;}
+  [data-theme="dark"] .ini-cob.mal .ini-cob-m{color:#F0908A;} [data-theme="dark"] .ini-cob.aviso .ini-cob-m{color:#E8C171;}
+  .ini-pend{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid rgba(243,240,232,.2);}
+  .ini-pend span{font-size:12px;color:rgba(243,240,232,.72);}
+  .ini-pend b{font-size:clamp(16px,5vw,19px);font-weight:700;color:#F3F0E8;letter-spacing:-.01em;white-space:nowrap;}
+  .ini-sem{display:flex;flex-direction:column;}
+  .ini-bars{display:flex;align-items:flex-end;justify-content:space-between;gap:4px;margin-top:7px;height:36px;}
+  .ini-bars div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;height:100%;}
+  .ini-bars i{display:block;width:100%;max-width:14px;min-height:3px;border-radius:3px;background:var(--i-verde);opacity:.38;}
+  .ini-bars .has i{opacity:.9;} .ini-bars .hoy i{opacity:1;box-shadow:0 0 0 1.5px var(--i-card),0 0 0 2.5px var(--i-verde);}
+  .ini-bars small{font-size:9px;line-height:1;color:var(--i-mut);font-weight:600;}
+  .ini-bars .hoy small{color:var(--i-verde);}
+  .ini-cob.sem{border-color:var(--i-bd);} .ini-cob.sem .ini-cob-m{color:var(--i-verde);}
+  .ini-cobrar{grid-template-columns:1fr !important;gap:8px !important;}
+  .ini-cob.venc{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:calc(9px + var(--ex) * .2) 14px;}
+  .ini-cob.venc .ini-cob-t{min-width:0;} .ini-cob.venc .ini-cob-l{justify-content:flex-start;} .ini-cob.venc .ini-cob-n{font-size:11.5px;}
+  .ini-cob.venc .ini-cob-m{margin:0;font-size:clamp(17px,5.2vw,20px);}
+  .ini-cob.venc>i{font-style:normal;font-size:17px;line-height:1;color:var(--i-verde);margin-left:2px;}
+  .ini-cob.venc.cero .ini-cob-m{font-size:16px;}
+  .ini-cob.sem{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:12px;align-items:center;}
+  .ini-cob.sem .ini-bars{margin-top:0;height:44px;}
+  .ini-cob.sem .ini-cob-l{justify-content:flex-start;}
+  .est-hero{padding:12px 15px 11px !important;margin-bottom:10px !important;}
+  .est-h-l{margin-bottom:2px !important;}
+  .est-h-v{font-size:22px !important;}
+  .est-hero .est-delta{margin-top:4px !important;}
+  .est-h-pie{padding-top:8px !important;gap:8px !important;}
+  .ini-val{font-size:22px !important;}
 </style>
 </head>
 <body>
@@ -3881,7 +3924,7 @@ function viewInicio(){
   if(state.vista==="estadisticas") return viewEstadisticas();
   if(state.vista==="ajustesClave") return viewAjustesClave();
   if(state.vista==="ajustes") return viewAjustes();
-  let prestado=0, activos=0, vencidos=0, proximos=0, capitalActual=0;
+  let prestado=0, activos=0, vencidos=0, capitalActual=0, montoVenc=0, nSem=0, montoSem=0; const semana=[0,0,0,0,0,0,0];
   state.prestamos.forEach(p=>{
     const r = resumen(p);
     prestado += p.refinanciaDe ? (Number(p.adicionalAlRefinanciar)||0) : capitalOriginalDesembolsado(p);
@@ -3889,17 +3932,25 @@ function viewInicio(){
     capitalActual += Number(r.capitalPendiente)||0;
     if(r.estado==="Activo"){
       activos++;
-      if(r.proximaFecha && diasAtraso(r.proximaFecha)>0) vencidos++;
-      else if(r.proximaFecha && [0,1].includes(diasParaVencer(r.proximaFecha))) proximos++;
+      if(r.proximaFecha && diasAtraso(r.proximaFecha)>0){
+        vencidos++;
+        // lo que falta de cada cuota ya vencida (la 1.ª descuenta lo abonado); sin mora
+        (r.tabla||[]).slice(r.pagosHechos).forEach((f,i)=>{ if(diasAtraso(f.fecha)>0) montoVenc += (i===0 ? (r.faltaEnCuotaActual||f.cuota) : f.cuota); });
+      }
+      else if(r.proximaFecha){
+        // lo que vence hoy y en los próximos 6 días (7 días en total), por día
+        const dv = diasParaVencer(r.proximaFecha);
+        if(dv !== null && dv >= 0 && dv <= 6){ const m = Number(r.faltaEnCuotaActual) || (r.cuotaActual ? r.cuotaActual.cuota : 0); semana[dv] += m; montoSem += m; nSem++; }
+      }
     }
   });
   const T = desgloseIngresosCobrados();
 
   const modoOscuro = !!state.config.temaOscuro;
   let html = estadoSyncInicio();
-  const cobCap = T.capital + T.enganches, cobInt = T.intereses, cobTot = cobCap + cobInt;
+  const cobCap = T.capital + T.enganches;
   const pctRec = prestado > 0.005 ? Math.min(100, cobCap / prestado * 100) : 0;
-  const colCartera = function(n, lbl, cls, fn){ return '<div class="ini-col ' + cls + '" onclick="' + fn + '"><b>' + n + '</b><span>' + lbl + '</span></div>'; };
+  const cardCobrar = function(lbl, n, monto, cls, fn, txt){ return '<div class="ini-cob venc ' + cls + '" onclick="' + fn + '"><div class="ini-cob-t"><span class="ini-cob-l">' + lbl + '</span><span class="ini-cob-n">' + (n > 0 ? n + (n === 1 ? ' préstamo' : ' préstamos') + txt : 'Ninguno atrasado') + '</span></div><b class="ini-cob-m">' + money(n > 0 ? monto : 0) + '</b><i>›</i></div>'; };
   const filaRep = function(txt, fn, extra){ return '<div class="ini-rep' + (extra ? ' ' + extra : '') + '" onclick="' + fn + '"><span>' + txt + '</span><i>›</i></div>'; };
   html += `<div class="v3-home ini"><div class="ini-hero">
     <div class="ini-top" onclick="irA('prestamos')">
@@ -3908,18 +3959,17 @@ function viewInicio(){
     </div>
     <div class="ini-prog"><i style="width:${pctRec > 0 ? Math.max(pctRec, 2).toFixed(1) : 0}%"></i></div>
     <div class="ini-prog-t"><span>Capital recuperado <b>${pctRec.toFixed(1)}%</b></span><span>${money(cobCap)} de ${money(prestado)}</span></div>
-    <div class="ini-dos">
-      <div onclick="state._reporteDesdeInicio=true;abrirReporteHistorialPagos()"><span>Total cobrado</span><b>${money(cobTot)}</b></div>
-      <div><span>Intereses cobrados</span><b>${money(cobInt)}</b></div>
-    </div>
   </div>
-  <div><p class="v3-sec">Cartera</p>
-    <div class="ini-cartera">
-      ${colCartera(activos, "Activos", "ok", "irA('prestamos')")}
-      ${colCartera(vencidos, "Vencidas", vencidos > 0 ? "mal" : "cero", "verCartera()")}
-      ${colCartera(proximos, "Por vencer", proximos > 0 ? "aviso" : "cero", "verProximosAVencer()")}
-      ${colCartera(state.clientes.length, "Clientes", "", "irA('clientes')")}
+  <div><p class="v3-sec">Para cobrar</p>
+    <div class="ini-cobrar">
+      ${cardCobrar("Vencido", vencidos, montoVenc, vencidos > 0 ? "mal" : "cero", "verCartera()", " atrasados")}
+      <div class="ini-cob sem" onclick="verProximosAVencer()"><div><span class="ini-cob-l">Próximos 7 días</span><b class="ini-cob-m">${money(montoSem)}</b><span class="ini-cob-n">${nSem > 0 ? nSem + (nSem === 1 ? " cuota" : " cuotas") : "Ninguna"}</span></div>
+        <div class="ini-bars">${semana.map(function(m, i){ const mx = Math.max.apply(null, semana) || 1; const dia = ["D","L","M","M","J","V","S"][new Date(addDays(hoyISO(), i) + "T12:00:00").getDay()]; return '<div class="' + (m > 0 ? "has " : "") + (i === 0 ? "hoy" : "") + '"><i style="height:' + (m > 0 ? Math.max(14, m / mx * 100) : 8) + '%"></i><small>' + dia + '</small></div>'; }).join("")}</div></div>
     </div></div>
+  <div class="ini-mini">
+    <div onclick="irA('prestamos')"><span>Activos</span><b>${activos}</b></div>
+    <div onclick="irA('clientes')"><span>Clientes</span><b>${state.clientes.length}</b></div>
+  </div>
   <div class="v3-reps-wrap"><p class="v3-sec">Reportes</p>
     <div class="ini-reps">
       ${filaRep("Estadísticas", "irEstadisticas()", "ini-rep-main")}
@@ -4763,7 +4813,7 @@ function viewColaRecordatorio(){
 }
 function viewCartera(){
   const prox = state.prestamos.map(p=>({p, r:resumen(p)}))
-    .filter(x=>x.r.estado==="Activo" && x.r.proximaFecha && [0,1].includes(diasParaVencer(x.r.proximaFecha)))
+    .filter(x=>x.r.estado==="Activo" && x.r.proximaFecha && diasParaVencer(x.r.proximaFecha) >= 0 && diasParaVencer(x.r.proximaFecha) <= 6)
     .sort((a,b)=> new Date(a.r.proximaFecha) - new Date(b.r.proximaFecha));
   const vencidos = state.prestamos.map(p=>({p, r:resumen(p)}))
     .filter(x=>x.r.estado==="Activo" && x.r.proximaFecha && diasAtraso(x.r.proximaFecha)>0)
@@ -5453,7 +5503,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "18.0";
+const JR_VERSION = "23.0";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
@@ -5801,7 +5851,7 @@ function datosEstadisticas(rango){
       } else {
         alDia++;
         const dv = r.proximaFecha ? diasParaVencer(r.proximaFecha) : null;
-        if(dv !== null && dv >= 0 && dv <= 7){ porCobrar7 += Number(r.cuota) || 0; nPorCobrar7++; }
+        if(dv !== null && dv >= 0 && dv <= 6){ porCobrar7 += Number(r.faltaEnCuotaActual) || (r.cuotaActual ? r.cuotaActual.cuota : 0); nPorCobrar7++; }
       }
       porCliente[p.clienteId] = (porCliente[p.clienteId] || 0) + saldo;
     } else cerrados++;
@@ -5966,6 +6016,9 @@ function viewEstadisticas(){
     <div class="est-card">
       <p class="est-t">Antigüedad de la mora</p>
       ${agingHtml}
+    </div>
+    <div class="est-card est-prox">
+      <div><p class="est-k-l">Pendiente por cobrar</p><p class="est-k-v">${money(d.saldoActivo)}</p><p class="est-sub">Capital + intereses que faltan de los préstamos activos · sin mora</p></div>
     </div>
     <div class="est-card est-prox">
       <div><p class="est-k-l">Por cobrar en los próximos 7 días</p><p class="est-k-v">${money(d.porCobrar7)}</p></div>
