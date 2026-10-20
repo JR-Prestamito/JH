@@ -880,6 +880,12 @@
   .est-hero .est-delta{margin-top:4px !important;}
   .est-h-pie{padding-top:8px !important;gap:8px !important;}
   .ini-val{font-size:22px !important;}
+  .ini-bars .hoy i{box-shadow:none !important;}
+  .ini-bars small{position:relative;}
+  .ini-bars .hoy small{font-weight:800;}
+  .ini-bars .hoy small::after{content:"";position:absolute;left:50%;bottom:-5px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--i-verde);}
+  .ini-bars{padding-bottom:5px;}
+  .ini-mini{margin-top:calc(-5px - var(--ex) * .15);}
 </style>
 </head>
 <body>
@@ -3950,7 +3956,7 @@ function viewInicio(){
   let html = estadoSyncInicio();
   const cobCap = T.capital + T.enganches;
   const pctRec = prestado > 0.005 ? Math.min(100, cobCap / prestado * 100) : 0;
-  const cardCobrar = function(lbl, n, monto, cls, fn, txt){ return '<div class="ini-cob venc ' + cls + '" onclick="' + fn + '"><div class="ini-cob-t"><span class="ini-cob-l">' + lbl + '</span><span class="ini-cob-n">' + (n > 0 ? n + (n === 1 ? ' préstamo' : ' préstamos') + txt : 'Ninguno atrasado') + '</span></div><b class="ini-cob-m">' + money(n > 0 ? monto : 0) + '</b><i>›</i></div>'; };
+  const cardCobrar = function(lbl, n, monto, cls, fn, txt){ return '<div class="ini-cob venc ' + cls + '" onclick="' + fn + '"><div class="ini-cob-t"><span class="ini-cob-l">' + lbl + '</span><span class="ini-cob-n">' + (n > 0 ? n + (n === 1 ? ' préstamo' : ' préstamos') + (n === 1 ? txt.replace(/s$/, '') : txt) : 'Ninguno atrasado') + '</span></div><b class="ini-cob-m">' + money(n > 0 ? monto : 0) + '</b><i>›</i></div>'; };
   const filaRep = function(txt, fn, extra){ return '<div class="ini-rep' + (extra ? ' ' + extra : '') + '" onclick="' + fn + '"><span>' + txt + '</span><i>›</i></div>'; };
   html += `<div class="v3-home ini"><div class="ini-hero">
     <div class="ini-top" onclick="irA('prestamos')">
@@ -5503,7 +5509,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "23.0";
+const JR_VERSION = "24.0";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
