@@ -412,6 +412,41 @@
   .v3-home .v3-tile .t-val{order:2;margin:0;font-size:20px;line-height:1.1;}
   .v3-home .v3-tile .t-lbl,.v3-rep p{order:3;margin:2px 0 0;min-height:2.3em;font-size:10.5px;font-weight:600;line-height:1.15;display:flex;align-items:flex-start;justify-content:center;}
 
+  /* ===== Inicio con más información y menos espacio vacío ===== */
+  .v3-home .v3-hero{padding:14px 16px 13px;}
+  .v3-prog{margin-top:11px;}
+  .v3-prog-bar{height:6px;border-radius:6px;background:rgba(255,255,255,.14);overflow:hidden;}
+  .v3-prog-bar i{display:block;height:100%;min-width:3px;border-radius:6px;background:linear-gradient(90deg,#C9973E,#E8C171);}
+  .v3-prog-txt{display:flex;justify-content:space-between;gap:8px;margin:6px 0 0;font-size:11px;color:rgba(255,255,255,.7);}
+  .v3-prog-txt b{color:var(--gold);font-weight:700;}
+  .v3-home .v3-mini>div{height:calc(50px + var(--ex) * .5);}
+  .v3-home .v3-tile{height:calc(88px + var(--ex));}
+  .v3-home .v3-rep{height:calc(68px + var(--ex));}
+  .v3-sec-row{display:flex;justify-content:space-between;align-items:baseline;}
+  .v3-ver{font-size:11.5px;font-weight:700;color:var(--gold);cursor:pointer;padding:0 4px;-webkit-tap-highlight-color:transparent;}
+  .v3-prox{margin:6px 0 0;background:#fff;border:1px solid rgba(27,42,74,.09);border-radius:16px;box-shadow:0 6px 14px -8px rgba(15,20,36,.28);padding:2px 12px;}
+  .v3-prow{display:flex;align-items:center;gap:10px;height:42px;border-top:1px solid rgba(27,42,74,.07);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .v3-prow:first-child{border-top:0;}
+  .v3-pav{flex:none;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:rgba(27,42,74,.09);color:var(--navy);}
+  .v3-pav.vp-rojo{background:rgba(192,67,59,.13);color:#C0433B;}
+  .v3-pav.vp-oro{background:rgba(201,151,62,.18);color:#8A6416;}
+  .v3-pmid{flex:1;min-width:0;}
+  .v3-pname{margin:0;font-size:13px;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .v3-psub{margin:1px 0 0;font-size:11px;color:#8a8680;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .v3-psub.vp-rojo{color:#C0433B;font-weight:600;}
+  .v3-psub.vp-oro{color:#8A6416;font-weight:600;}
+  .v3-pmon{margin:0;font-size:13px;font-weight:700;color:var(--navy);white-space:nowrap;}
+  .v3-pvacio{margin:0;padding:12px 0;text-align:center;font-size:12.5px;color:#8a8680;}
+  [data-theme="dark"] .v3-prox{background:#1B212C;border-color:rgba(255,255,255,.08);box-shadow:none;}
+  [data-theme="dark"] .v3-prow{border-top-color:rgba(255,255,255,.07);}
+  [data-theme="dark"] .v3-pav{background:rgba(255,255,255,.1);color:#D5D8DE;}
+  [data-theme="dark"] .v3-pav.vp-rojo{background:rgba(240,144,138,.16);color:#F0908A;}
+  [data-theme="dark"] .v3-pav.vp-oro{background:rgba(232,193,113,.16);color:#E8C171;}
+  [data-theme="dark"] .v3-pname,[data-theme="dark"] .v3-pmon{color:#E3E5EA;}
+  [data-theme="dark"] .v3-psub{color:#9AA1AE;}
+  [data-theme="dark"] .v3-psub.vp-rojo{color:#F0908A;}
+  [data-theme="dark"] .v3-psub.vp-oro{color:#E8C171;}
+
   /* ===== Ronda 2: eliminar cliente, íconos de pagos y modo oscuro dorado ===== */
   .btn-eliminar-cli{width:36px;height:36px;flex:none;display:inline-flex;align-items:center;justify-content:center;padding:0;border-radius:12px;background:rgba(192,80,77,.08);border:1px solid rgba(192,80,77,.22);color:#b9504d;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease,background .12s ease;}
   .btn-eliminar-cli svg{width:18px;height:18px;}
@@ -3509,6 +3544,7 @@ function ajustarInicioFijo(){
   const tabbar = document.querySelector("#app > .tabbar");
   const pill = document.querySelector("#app .sync-pill");
   const reps = home.querySelector(".v3-reps-wrap");
+  const prox = home.querySelector(".v3-prox-wrap");
   const GAP_ABAJO = 18;
   let sobra = 0;
   function medir(){
@@ -3523,15 +3559,17 @@ function ajustarInicioFijo(){
   }
   if(pill) pill.style.marginBottom = "";
   if(reps) reps.style.display = "";
+  if(prox) prox.style.display = "";
   let z = medir();
   if(z === null) return;
+  if(z < 0.92 && prox){ prox.style.display = "none"; z = medir(); if(z === null) return; }
   if(z < 0.88 && reps){ reps.style.display = "none"; z = medir(); if(z === null) return; }
   home.style.zoom = Math.max(0.45, Math.min(1, z));
   // Si sobra espacio (pantallas altas, sobre todo con la app instalada) las tarjetas YA NO se
   // estiran: se quedan con su tamaño normal y el sobrante se reparte en más aire entre
   // secciones (tope 28 px por hueco). Lo que aún sobre se reparte arriba y abajo (ver abajo).
   if(z >= 1 && sobra > 0){
-    const huecos = (reps && reps.style.display !== "none") ? 3 : 2;
+    const huecos = Math.max(1, Array.from(home.children).filter(e => e.style.display !== "none").length - 1);
     home.style.setProperty("--gx", Math.min(sobra / huecos, 28).toFixed(1) + "px");
   }
   // Si sobra espacio, se reparte entre arriba y abajo (arriba crece máx. 30 px).
@@ -3563,6 +3601,7 @@ function viewInicio(){
   if(state.vista==="ajustesClave") return viewAjustesClave();
   if(state.vista==="ajustes") return viewAjustes();
   let prestado=0, activos=0, vencidos=0, proximos=0, capitalActual=0;
+  const cobros=[];
   state.prestamos.forEach(p=>{
     const r = resumen(p);
     prestado += p.refinanciaDe ? (Number(p.adicionalAlRefinanciar)||0) : capitalOriginalDesembolsado(p);
@@ -3570,11 +3609,38 @@ function viewInicio(){
     capitalActual += Number(r.capitalPendiente)||0;
     if(r.estado==="Activo"){
       activos++;
+      if(r.proximaFecha){ const pen = calcularPendiente(p, r, false); cobros.push({ p, fecha:r.proximaFecha, monto:pen.monto, n:pen.nVenc, atr:diasAtraso(r.proximaFecha) }); }
       if(r.proximaFecha && diasAtraso(r.proximaFecha)>0) vencidos++;
       else if(r.proximaFecha && [0,1].includes(diasParaVencer(r.proximaFecha))) proximos++;
     }
   });
   const T = desgloseIngresosCobrados();
+
+  // Barra de avance: qué parte del capital prestado ya regresó.
+  const capCobrado = T.capital + T.enganches;
+  const pctRec = prestado>0 ? Math.max(0, Math.min(100, capCobrado/prestado*100)) : 0;
+  const progHtml = prestado>0
+    ? `<div class="v3-prog"><div class="v3-prog-bar"><i style="width:${pctRec.toFixed(1)}%"></i></div>
+        <p class="v3-prog-txt"><span>Capital recuperado <b>${pctRec.toFixed(1)}%</b></span><span>${money(capCobrado)} de ${money(prestado)}</span></p></div>`
+    : "";
+  // Próximos cobros: lo más urgente primero (vencidos, luego los que vencen pronto).
+  const escH = t => String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  cobros.sort((a,b)=> a.fecha<b.fecha ? -1 : a.fecha>b.fecha ? 1 : 0);
+  const filasProx = cobros.slice(0,3).map(c=>{
+    const cli = state.clientes.find(x=>x.id===c.p.clienteId);
+    const nom = cli ? cli.nombre : "—";
+    let txt, cls;
+    if(c.atr>0){ txt = c.n>1 ? `${c.n} cuotas vencidas · ${c.atr} d` : `Vencida · ${c.atr} d de atraso`; cls = "vp-rojo"; }
+    else {
+      const d = diasParaVencer(c.fecha);
+      txt = d===0 ? "Vence hoy" : d===1 ? "Vence mañana" : `Vence en ${d} días`;
+      cls = d<=1 ? "vp-oro" : "vp-normal";
+    }
+    const ini = (String(nom).trim()[0]||"?").toUpperCase();
+    return `<div class="v3-prow" onclick="verDetalle('${c.p.id}')"><span class="v3-pav ${cls}">${escH(ini)}</span><div class="v3-pmid"><p class="v3-pname">${escH(nom)}</p><p class="v3-psub ${cls}">${escH(c.p.codigo)} · ${txt}</p></div><p class="v3-pmon">${money(c.monto)}</p></div>`;
+  }).join("");
+  const proxHtml = `<div class="v3-prox-wrap"><div class="v3-sec-row"><p class="v3-sec">Próximos cobros</p><a class="v3-ver" onclick="verCartera()">Ver todos ›</a></div>
+    <div class="v3-prox">${filasProx || '<p class="v3-pvacio">No hay cobros pendientes</p>'}</div></div>`;
 
   const modoOscuro = !!state.config.temaOscuro;
   let html = estadoSyncInicio();
@@ -3584,7 +3650,7 @@ function viewInicio(){
       <p class="v3-val"><em>${simboloMoneda()}</em> ${money(capitalActual).replace(/^\S+\s*/,"")}</p></div>
       <span class="v3-ico">${ICO_INI.banco}</span>
     </div>
-    <p class="v3-note">Saldo de capital que tus clientes todavía te deben (sin interés de cuotas futuras).</p>
+    ${progHtml}
   </div>
   <div><p class="v3-sec">Detalles de capital</p>
     <div class="v3-mini">
@@ -3601,6 +3667,7 @@ function viewInicio(){
       <div class="v3-tile t-azul" onclick="verProximosAVencer()"><span class="v3-ico">${ICO_INI.reloj}</span><p class="t-lbl">Próximos a vencer</p><p class="t-val">${proximos}</p></div>
       <div class="v3-tile t-dorado" onclick="irA('clientes')"><span class="v3-ico">${ICO_INI.personas}</span><p class="t-lbl">Clientes registrados</p><p class="t-val">${state.clientes.length}</p></div>
     </div></div>
+  ${proxHtml}
   <div class="v3-reps-wrap"><p class="v3-sec">Reportes</p>
     <div class="v3-reps">
       <div class="v3-rep" onclick="state._reporteDesdeInicio=true;abrirReporteHistorialPagos()"><span class="v3-ico">${ICO_INI.billetera}</span><p>Historial de pagos</p></div>
