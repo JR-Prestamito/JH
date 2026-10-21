@@ -714,7 +714,7 @@
   .est-h-v{margin:0;font-size:28px;font-weight:700;letter-spacing:-.02em;color:#F3F0E8;word-break:break-word;}
   .est-hero .est-delta{display:inline-block;margin-top:6px;padding:3px 9px;border-radius:999px;background:rgba(243,240,232,.12);font-size:12px;font-weight:600;}
   .est-hero .est-delta.sube{color:#8FE0B0;} .est-hero .est-delta.baja{color:#FFB3AC;}
-  .est-spark{display:block;width:100%;height:auto;margin:10px 0 8px;}
+  .est-spark{display:block;width:100%;height:auto;margin:8px 0 6px;}
   .est-h-pie{display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid rgba(243,240,232,.14);padding-top:10px;}
   .est-h-pie span{display:block;font-size:11.5px;color:rgba(243,240,232,.65);margin-bottom:2px;}
   .est-h-pie b{font-size:15px;color:#F3F0E8;font-weight:700;}
@@ -887,6 +887,24 @@
   .ini-bars{padding-bottom:5px;}
   .ini-mini{margin-top:calc(-5px - var(--ex) * .15);}
   .ini-bars .pasado i{opacity:.18 !important;} .ini-bars .pasado small{opacity:.55;}
+  /* ===== Estilo de Inicio: Azul marino y dorado (opcional desde Ajustes > Apariencia) ===== */
+  [data-inicio="marino"] #app:has(.v3-home){background:radial-gradient(120% 40% at 50% 0%,rgba(27,42,74,.07) 0%,rgba(27,42,74,0) 70%),#F7F5F0;}
+  [data-inicio="marino"][data-theme="dark"] #app:has(.v3-home){background:radial-gradient(120% 40% at 50% 0%,rgba(201,151,62,.08) 0%,rgba(201,151,62,0) 70%),#12161f;}
+  [data-inicio="marino"] .ini{--i-verde:#B07F22;}
+  [data-inicio="marino"][data-theme="dark"] .ini{--i-verde:#E8C171;}
+  [data-inicio="marino"] .ini-hero{background:radial-gradient(circle at 90% 6%,rgba(201,151,62,.28) 0,rgba(201,151,62,0) 45%),linear-gradient(155deg,#1B2A4A 0%,#0F1A30 100%);border:1px solid rgba(255,255,255,.07);box-shadow:0 10px 24px rgba(15,20,36,.3);}
+  [data-inicio="marino"][data-theme="dark"] .ini-hero{background:radial-gradient(circle at 90% 6%,rgba(201,151,62,.20) 0,rgba(201,151,62,0) 45%),linear-gradient(155deg,#1E2740 0%,#141B30 100%);box-shadow:none;}
+  [data-inicio="marino"] .ini-prog i{background:linear-gradient(90deg,#C9973E,#E0B35A);}
+  [data-inicio="marino"] .ini-rep-main{background:linear-gradient(155deg,#1B2A4A 0%,#0F1A30 100%);border-color:rgba(255,255,255,.07);color:#F3F0E8;box-shadow:0 6px 14px -8px rgba(15,20,36,.5);}
+  [data-inicio="marino"][data-theme="dark"] .ini-rep-main{background:linear-gradient(155deg,#1E2740 0%,#141B30 100%);border-color:rgba(255,255,255,.08);color:#F3F0E8;box-shadow:none;}
+  [data-inicio="marino"] .ini-cob.sem .ini-cob-m{color:#1B2A4A;}
+  [data-inicio="marino"][data-theme="dark"] .ini-cob.sem .ini-cob-m{color:#E8C171;}
+  [data-inicio="marino"] .ini-bars i{background:#1B2A4A;}
+  [data-inicio="marino"][data-theme="dark"] .ini-bars i{background:#E8C171;}
+  [data-inicio="marino"] .ini-bars .hoy small{color:#B07F22;} [data-inicio="marino"] .ini-bars .hoy small::after{background:#C9973E;}
+  [data-inicio="marino"][data-theme="dark"] .ini-bars .hoy small{color:#E8C171;} [data-inicio="marino"][data-theme="dark"] .ini-bars .hoy small::after{background:#E8C171;}
+  [data-inicio="marino"] .est-hero{background:linear-gradient(155deg,#1B2A4A 0%,#26396a 100%) !important;box-shadow:0 6px 18px rgba(27,42,74,.22) !important;}
+  [data-inicio="marino"][data-theme="dark"] .est-hero{background:linear-gradient(155deg,#1E2740 0%,#243055 100%) !important;box-shadow:none !important;}
 </style>
 </head>
 <body>
@@ -1118,6 +1136,7 @@ let state = {
 // Se aplica el tema antes del primer render para que no haya un parpadeo de tema claro
 // al abrir la app si el modo oscuro está activado.
 document.documentElement.setAttribute("data-theme", state.config.temaOscuro ? "dark" : "light");
+document.documentElement.setAttribute("data-inicio", state.config.estiloInicio === "marino" ? "marino" : "verde");
   document.documentElement.setAttribute("data-ayudas", state.config.mostrarAyudas ? "on" : "off");
 // Recuerda qué listas (tarjetas desplegables) están abiertas en cada pantalla, para dejarlas
 // abiertas al volver de un recibo y al refrescar.
@@ -2419,6 +2438,7 @@ function medirEncabezado(){
 window.addEventListener("resize", medirEncabezado);
 function render(){
   document.documentElement.setAttribute("data-theme", state.config.temaOscuro ? "dark" : "light");
+document.documentElement.setAttribute("data-inicio", state.config.estiloInicio === "marino" ? "marino" : "verde");
   document.documentElement.setAttribute("data-ayudas", state.config.mostrarAyudas ? "on" : "off");
   if(state.config.pin && !desbloqueado){
     renderBloqueo();
@@ -4163,6 +4183,12 @@ function viewAjustes(){
       <span style="margin:0;font-size:14px;">Modo oscuro</span>
     </label>
     <p class="hint nota-ayuda" style="margin:6px 0 0;">Los recibos y reportes que imprimes o envías siempre se ven en claro, pensados para papel.</p>
+    <label style="margin:14px 0 0;"><span>Estilo de Inicio y Estadísticas</span>
+      <select id="f_estiloInicio" onchange="state.config.estiloInicio=this.value; document.documentElement.setAttribute('data-inicio', this.value); save(); render();">
+        <option value="verde" ${state.config.estiloInicio!=="marino"?"selected":""}>Verde confianza</option>
+        <option value="marino" ${state.config.estiloInicio==="marino"?"selected":""}>Azul marino y dorado</option>
+      </select>
+    </label>
     <label style="display:flex;align-items:center;gap:8px;margin:14px 0 0;cursor:pointer;">
       <input type="checkbox" style="width:auto;" ${state.config.mostrarAyudas?"checked":""} onchange="state.config.mostrarAyudas=this.checked; document.documentElement.setAttribute('data-ayudas', this.checked?'on':'off'); save(); render();">
       <span style="margin:0;font-size:14px;">Mostrar notas de ayuda</span>
@@ -5520,7 +5546,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "24.1";
+const JR_VERSION = "24.4";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
@@ -5888,7 +5914,7 @@ function datosEstadisticas(rango){
 }
 // Línea suave con área (mini gráfica del resumen principal)
 function svgTendencia(d){
-  const W = 320, H = 64, p = 4, vals = d.claves.map(function(k){ return d.cobM[k]; });
+  const W = 320, H = 42, p = 4, vals = d.claves.map(function(k){ return d.cobM[k]; });
   const n = vals.length, max = Math.max.apply(null, vals.concat([1]));
   const px = function(i){ return n === 1 ? W / 2 : p + (W - 2 * p) * i / (n - 1); };
   const py = function(v){ return H - p - (H - 2 * p - 4) * v / max; };
