@@ -905,6 +905,11 @@
   [data-inicio="marino"][data-theme="dark"] .ini-bars .hoy small{color:#E8C171;} [data-inicio="marino"][data-theme="dark"] .ini-bars .hoy small::after{background:#E8C171;}
   [data-inicio="marino"] .est-hero{background:linear-gradient(155deg,#1B2A4A 0%,#26396a 100%) !important;box-shadow:0 6px 18px rgba(27,42,74,.22) !important;}
   [data-inicio="marino"][data-theme="dark"] .est-hero{background:linear-gradient(155deg,#1E2740 0%,#243055 100%) !important;box-shadow:none !important;}
+  /* v24.5: tamaños fijos (no cambian con el monto) y un poco más pequeños */
+  .ini-val{font-size:20px !important;}
+  .ini-cob.venc .ini-cob-m,.ini-cob.venc.cero .ini-cob-m,.ini-cob .ini-cob-m{font-size:clamp(15px,4.4vw,17px) !important;}
+  .ini-sec-flex{display:flex;justify-content:space-between;align-items:baseline;}
+  .ini-sec-flex span{font-size:11px;font-weight:500;text-transform:none;letter-spacing:0;}
 </style>
 </head>
 <body>
@@ -3920,8 +3925,8 @@ function ajustarInicioFijo(){
   // Si sobra espacio, se reparte entre las secciones: tarjetas un poco más altas (todas por
   // igual, así siguen uniformes) y más aire entre secciones. Tope: 28 px por tarjeta.
   if(z >= 1 && sobra > 0){
-    const sens = (reps && reps.style.display !== "none") ? 3.75 : 2.75;
-    home.style.setProperty("--ex", Math.min(sobra / sens, 28).toFixed(1) + "px");
+    const sens = (reps && reps.style.display !== "none") ? 2.9 : 2.2;
+    home.style.setProperty("--ex", Math.min(sobra / sens, 34).toFixed(1) + "px");
   }
   // Si sobra espacio, se reparte entre arriba y abajo (arriba crece máx. 30 px).
   if(pill){
@@ -3987,19 +3992,14 @@ function viewInicio(){
     <div class="ini-prog"><i style="width:${pctRec > 0 ? Math.max(pctRec, 2).toFixed(1) : 0}%"></i></div>
     <div class="ini-prog-t"><span>Capital recuperado <b>${pctRec.toFixed(1)}%</b></span><span>${money(cobCap)} de ${money(prestado)}</span></div>
   </div>
-  <div><p class="v3-sec">Para cobrar</p>
+  <div><p class="v3-sec ini-sec-flex">Para cobrar<span>${activos} ${activos === 1 ? "activo" : "activos"} · ${state.clientes.length} ${state.clientes.length === 1 ? "cliente" : "clientes"}</span></p>
     <div class="ini-cobrar">
       ${cardCobrar("Vencido", vencidos, montoVenc, vencidos > 0 ? "mal" : "cero", "verCartera()", " atrasados")}
       <div class="ini-cob sem" onclick="verProximosAVencer()"><div><span class="ini-cob-l">Esta semana</span><b class="ini-cob-m">${money(montoSem)}</b><span class="ini-cob-n">${nSem > 0 ? nSem + (nSem === 1 ? " cuota" : " cuotas") : "Ninguna"}</span></div>
         <div class="ini-bars">${semana.map(function(m, i){ const mx = Math.max.apply(null, semana) || 1; const hoyI = 6 - diasHastaDomingo(); const dia = ["L","M","M","J","V","S","D"][i]; return '<div class="' + (m > 0 ? "has " : "") + (i === hoyI ? "hoy " : "") + (i < hoyI ? "pasado" : "") + '"><i style="height:' + (m > 0 ? Math.max(14, m / mx * 100) : 8) + '%"></i><small>' + dia + '</small></div>'; }).join("")}</div></div>
     </div></div>
-  <div class="ini-mini">
-    <div onclick="irA('prestamos')"><span>Activos</span><b>${activos}</b></div>
-    <div onclick="irA('clientes')"><span>Clientes</span><b>${state.clientes.length}</b></div>
-  </div>
   <div class="v3-reps-wrap"><p class="v3-sec">Reportes</p>
     <div class="ini-reps">
-      ${filaRep("Estadísticas", "irEstadisticas()", "ini-rep-main")}
       ${filaRep("Historial de pagos", "state._reporteDesdeInicio=true;abrirReporteHistorialPagos()")}
       ${filaRep("Desembolsos", "state._reporteDesdeInicio=true;abrirReporteDesembolsos()")}
       ${filaRep("Estado de resultados", "state._reporteDesdeInicio=true;abrirEstadoResultados()")}
@@ -5546,7 +5546,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "24.4";
+const JR_VERSION = "24.6";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
