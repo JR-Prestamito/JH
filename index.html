@@ -4112,12 +4112,12 @@ function actualizarPreviewMensajes(){
 }
 function viewAjustes(){
   return `
-  ${window.__esCopiaCompartida ? "" : `
+  
   <div class="row-card" style="display:block;" id="sec-nombre-negocio">
     <p style="font-weight:600;margin:0 0 4px;">Nombre del negocio</p>
     <p class="hint nota-ayuda" style="margin:0 0 10px;">Aparece en el encabezado, los recibos y los reportes. Cámbialo si vas a usar esta app para otro negocio.</p>
     <label style="margin-bottom:0;"><span>Nombre</span><input id="f_nombreNegocio" placeholder="JR Prestamito" value="${state.config.nombreNegocio||""}" oninput="state.config.nombreNegocio=this.value; save(); render();"></label>
-  </div>`}
+  </div>
   <div class="row-card" style="display:block;" id="sec-apariencia">
     <p style="font-weight:600;margin:0 0 4px;">Apariencia</p>
     <label style="display:flex;align-items:center;gap:8px;margin-bottom:0;cursor:pointer;">
@@ -4186,7 +4186,7 @@ function viewAjustes(){
     </div>
     <input type="file" id="archivoRespaldo" accept="application/json" style="display:none" onchange="importarDatos(event)">
   </div>
-  ${window.__esCopiaCompartida ? "" : `
+  
   <div class="row-card" style="display:block;" id="sec-plazo">
     <p style="font-weight:600;margin:0 0 4px;">Cómo contar los días del plazo</p>
     <p class="hint nota-ayuda" style="margin:0 0 10px;">Ejemplo con préstamo semanal iniciado un miércoles: con "Contar desde el día 1" la primera cuota cae el próximo martes (7 días contando el miércoles como día 1). Con "Estándar" cae el miércoles siguiente (7 días completos después, sin contar el día del préstamo).</p>
@@ -4196,7 +4196,7 @@ function viewAjustes(){
         <option value="no" ${(state.config.contarDiaInicio!==true)?"selected":""}>Estándar bancario (el día del préstamo no cuenta)</option>
       </select>
     </label>
-  </div>`}
+  </div>
   <div class="row-card" style="display:block;" id="sec-clave">
     <p style="font-weight:600;margin:0 0 4px;">Clave de acceso</p>
     <p class="hint nota-ayuda" style="margin:0 0 12px;">Esta misma clave protege la app al abrirla y también te la vuelve a pedir al entrar a Ajustes, por seguridad extra.</p>
@@ -4217,7 +4217,7 @@ function viewAjustes(){
       </label>
       <p class="hint nota-ayuda" style="margin:6px 0 0;">Si la desactivas, la clave se te sigue pidiendo al abrir la app, pero ya no al entrar aquí a Ajustes.</p>
     </div>` : ""}
-    ${window.__esCopiaCompartida ? "" : `
+    
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid #E5E1D8;">
       <p style="font-size:13px;font-weight:600;margin:0 0 4px;">Huella / Face ID</p>
       ${!state.config.pin
@@ -4228,9 +4228,9 @@ function viewAjustes(){
               : `<p class="hint nota-ayuda" style="margin:0 0 10px;">Úsala como atajo para no escribir la clave cada vez que abres la app. La clave se sigue guardando y funciona siempre como respaldo.</p><button class="btn btn-outline" onclick="activarHuella()">Activar huella / Face ID</button>`)
           : `<p class="hint nota-ayuda" style="margin:0;">No disponible ahora mismo en este celular/navegador. Para poder usarla, la app debe abrirse desde una dirección https:// (no como archivo descargado directamente) y el celular debe tener huella o Face ID configurados en sus ajustes.</p>`
       }
-    </div>`}
+    </div>
   </div>
-  ${window.__esCopiaCompartida ? "" : `
+  
   <div class="row-card" style="display:block;" id="sec-recibo">
     <p style="font-weight:600;margin:0 0 4px;">Recibo</p>
     <p class="hint nota-ayuda" style="margin:0 0 10px;">El recibo lleva una marca de agua de fondo con las iniciales de tu negocio (${siglasApp()}) para que no se pueda falsificar fácilmente. Por defecto, el recibo sale <b>sin firma</b> cuando lo envías por WhatsApp/PDF y <b>con línea de firma</b> cuando lo imprimes en papel — puedes forzar una sola opción para ambos casos aquí:</p>
@@ -4247,8 +4247,8 @@ function viewAjustes(){
       <p class="hint nota-ayuda" style="margin:0 0 4px;">Aplican a todos los recibos (pantalla, imagen y papel).</p>
       ${htmlControlesRecibo()}
     </details>
-  </div>`}
-  ${window.__esCopiaCompartida ? "" : `
+  </div>
+  
   <div class="row-card" style="display:block;" id="sec-whatsapp">
     <p style="font-weight:600;margin:0 0 4px;">WhatsApp para recordatorios</p>
     <p class="hint nota-ayuda" style="margin:0 0 10px;">Elige con cuál app debe intentar abrir el botón "Enviar WhatsApp" en Cartera vencida. En Android, si la app elegida no está instalada, cae de vuelta a WhatsApp normal. En iPhone, esta opción no hace diferencia (Apple no permite elegir entre las dos apps desde un enlace) y siempre se abre la app de WhatsApp que tengas configurada como predeterminada.</p>
@@ -4259,8 +4259,8 @@ function viewAjustes(){
         <option value="business" ${state.config.whatsappApp==="business"?"selected":""}>WhatsApp Business (Android)</option>
       </select>
     </label>
-  </div>`}
-  ${window.__esCopiaCompartida ? "" : `
+  </div>
+  
   ${cuentasCardHtml()}
   <div class="row-card" style="display:block;" id="sec-msg-recordatorio">
     <p style="font-weight:600;margin:0 0 4px;">Mensaje de recordatorio (WhatsApp / SMS)</p>
@@ -4268,15 +4268,15 @@ function viewAjustes(){
     <details class="chips-det" ${(state._chipsOpen||{}).f_mensajeRecordatorio?"open":""} ontoggle="(state._chipsOpen=state._chipsOpen||{}).f_mensajeRecordatorio=this.open"><summary>Palabras para insertar</summary><div class="chips-var"><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{nombre}\')">Nombre</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{cuentas}\')">Cuentas</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'\\n\')">↵ Salto de línea</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{nombre del negocio}\')">Negocio</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{codigo}\')">Código</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{cuota}\')">Cuota</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{monto}\')">Monto</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{cuotas}\')">Cuotas</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{fecha}\')">Fecha</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajeRecordatorio\',\'{dias}\')">Días</button></div></details><label style="margin-bottom:8px;"><span>Mensaje</span><textarea id="f_mensajeRecordatorio" rows="3" enterkeyhint="enter" autocapitalize="sentences" spellcheck="false" oninput="state.config.mensajeRecordatorio=this.value; save(); actualizarPreviewMensajes();">${jrEscapeHtml(state.config.mensajeRecordatorio||PLANTILLA_RECORDATORIO_DEFECTO)}</textarea></label>
     <p class="hint" style="margin:0 0 10px;"><b>Vista previa:</b> <span id="prev_recordatorio">${mensajeRecordatorio({codigo:"P-0001"}, {nombre:"María López"}, {cuotaActual:null, cuota:1500, proximaFecha:hoyISO()}, 3, {monto:3000, mora:90, nVenc:2})}</span></p>
     <button class="btn btn-outline" onclick="mostrarConfirmacion('¿Volver al mensaje original?', function(ok){ if(ok){ state.config.mensajeRecordatorio=''; save(); render(); } })">Restablecer mensaje original</button>
-  </div>`}
-  ${window.__esCopiaCompartida ? "" : `
+  </div>
+  
   <div class="row-card" style="display:block;" id="sec-msg-pendiente">
     <p style="font-weight:600;margin:0 0 4px;">Mensaje de pendiente de cobro (1 día antes)</p>
     <p class="hint nota-ayuda" style="margin:0 0 10px;">Este es el mensaje que se manda al presionar "Recordar por WhatsApp/SMS" en Cartera vencida, en la sección "Pendientes de cobro" (cuotas que vencen mañana, todavía no están atrasadas). Usa las mismas palabras entre llaves: <b>{nombre}</b> (nombre y un apellido del cliente), <b>{nombre_completo}</b>, <b>{primer_nombre}</b>, <b>{codigo}</b>, <b>{cuota}</b>, <b>{fecha}</b>, <b>{negocio}</b> o <b>{nombre del negocio}</b> (tu nombre del negocio de Ajustes).</p>
     <details class="chips-det" ${(state._chipsOpen||{}).f_mensajePendiente?"open":""} ontoggle="(state._chipsOpen=state._chipsOpen||{}).f_mensajePendiente=this.open"><summary>Palabras para insertar</summary><div class="chips-var"><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'{nombre}\')">Nombre</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'{nombre del negocio}\')">Negocio</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'{codigo}\')">Código</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'{cuota}\')">Cuota</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'{cuentas}\')">Cuentas</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'\\n\')">↵ Salto de línea</button><button type="button" class="chip-var" onpointerdown="event.preventDefault()" onclick="insertarVariable(\'f_mensajePendiente\',\'{fecha}\')">Fecha</button></div></details><label style="margin-bottom:8px;"><span>Mensaje</span><textarea id="f_mensajePendiente" rows="3" enterkeyhint="enter" autocapitalize="sentences" spellcheck="false" oninput="state.config.mensajePendiente=this.value; save(); actualizarPreviewMensajes();">${jrEscapeHtml(state.config.mensajePendiente||PLANTILLA_PENDIENTE_DEFECTO)}</textarea></label>
     <p class="hint" style="margin:0 0 10px;"><b>Vista previa:</b> <span id="prev_pendiente">${mensajePendiente({codigo:"P-0001"}, {nombre:"María López"}, {cuotaActual:null, cuota:1500, proximaFecha:hoyISO()})}</span></p>
     <button class="btn btn-outline" onclick="mostrarConfirmacion('¿Volver al mensaje original?', function(ok){ if(ok){ state.config.mensajePendiente=''; save(); render(); } })">Restablecer mensaje original</button>
-  </div>`}
+  </div>
   <div class="row-card" style="display:block;" id="sec-mora">
     <p style="font-weight:600;margin:0 0 4px;">Mora por atraso</p>
     <p class="hint nota-ayuda" style="margin:0 0 10px;">Elige cómo se cobra la mora cuando una cuota se atrasa. Déjala en 0 si no quieres cobrar mora.</p>
@@ -5481,7 +5481,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "25.19";
+const JR_VERSION = "25.20";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
