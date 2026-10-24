@@ -998,6 +998,10 @@
   /* v25.15: un solo tono tenue (crema 72%) para textos secundarios en modo oscuro; campo N° de préstamo a la altura de los demás y más corto */
   [data-theme="dark"] [style*="color:#6B7080" i],[data-theme="dark"] .sync-sub,[data-theme="dark"] .sync-chev{color:rgba(243,240,232,.72) !important;}
   input.campo-fijo{padding:9px 11px;font-size:15px;width:calc(50% - 6px);}
+  /* v25.21 (modo claro): títulos y etiquetas de Inicio en azul marino; textos de reportes en gris */
+  :root:not([data-theme="dark"]) .ini .v3-sec,:root:not([data-theme="dark"]) .ini-cob-l{color:#1B2A4A;}
+  :root:not([data-theme="dark"]) .ini-sec-flex span:not(.ini-link){color:#6B7080;}
+  :root:not([data-theme="dark"]) .ini-rep{color:#6B7080;}
 </style>
 </head>
 <body>
@@ -5481,7 +5485,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "25.20";
+const JR_VERSION = "25.21";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
