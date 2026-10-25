@@ -5495,7 +5495,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "25.28";
+const JR_VERSION = "25.30";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
@@ -6140,7 +6140,9 @@ function generarEstadoCuentaPDF(p, cli, r){
   doc.text(`Método: ${p.metodo}`, col2, y); y += 4.2;
   if(cli && cli.celular){ doc.text(`Celular: ${cli.celular}`, col1, y); }
   doc.text(`Tasa: ${p.tasa}% · ${p.periodo}`, col2, y); y += 4.2;
-  doc.text(`Fecha de inicio: ${fmtDate(p.fechaInicio)}`, col2, y);
+  // Con modificaciones, p.fechaInicio es la del último refinanciamiento: el inicio real es el de la primera.
+  const _m0i = (p.modificaciones && p.modificaciones.length) ? p.modificaciones[0] : null;
+  doc.text(`Fecha de inicio: ${fmtDate(_m0i ? (_m0i.fechaInicioAnterior || _m0i.fecha || p.fechaInicio) : p.fechaInicio)}`, col2, y);
   doc.setTextColor(20);
   y += 7;
 
@@ -6180,9 +6182,9 @@ function generarEstadoCuentaPDF(p, cli, r){
     if(p.modificaciones && p.modificaciones.length){
       doc.autoTable({
         startY: y,
-        head: [["Fecha","Capital antes","Capital después","Tasa antes","Tasa después"]],
+        head: [["Fecha","Capital antes","Aumento","Capital después","Tasa antes","Tasa después"]],
         body: p.modificaciones.map(m=>[
-          fmtDate(m.fecha), money(m.capitalAnterior), money(m.capitalNuevo),
+          fmtDate(m.fecha), money(m.capitalAnterior), money(m.adicional!=null ? (Number(m.adicional)||0) : Math.max((Number(m.capitalNuevo)||0)-(Number(m.capitalAnterior)||0),0)), money(m.capitalNuevo),
           `${m.tasaAnterior}%`, `${m.tasaNueva}%`
         ]),
         styles: { fontSize: 8, cellPadding: 1 },
@@ -7315,6 +7317,18 @@ function viewPagos(){
     const capitalNeto = (p.refinanciaDe ? (Number(p.adicionalAlRefinanciar)||0) : capitalOriginalDesembolsado(p))
       + (p.modificaciones||[]).reduce((s,m)=>s+(Number(m.adicional)||0),0);
 
+    // Desglose bajo "Prestado (neto)": inicial + aumentos si hubo modificaciones; o lo entregado + el
+    // saldo que vino del préstamo anterior si nació de un refinanciamiento.
+    const _aum = (p.modificaciones||[]).reduce((s,m)=>s+(Number(m.adicional)||0),0);
+    let desgloseNeto = "";
+    if(p.refinanciaDe){
+      const _ant = state.prestamos.find(x=>x.id===p.refinanciaDe);
+      const _saldoPrev = capitalOriginalDesembolsado(p) - (Number(p.adicionalAlRefinanciar)||0);
+      if(_saldoPrev > 0.005) desgloseNeto = `Entregado ${money(Number(p.adicionalAlRefinanciar)||0)} + saldo de ${_ant?_ant.codigo:"préstamo anterior"} ${money(_saldoPrev)}` + (_aum>0.005 ? ` + aumentos ${money(_aum)}` : "");
+      else if(_aum>0.005) desgloseNeto = `Inicial ${money(Number(p.adicionalAlRefinanciar)||0)} + aumentos ${money(_aum)}`;
+    } else if(_aum>0.005){
+      desgloseNeto = `Inicial ${money(capitalOriginalDesembolsado(p))} + aumentos ${money(_aum)}`;
+    }
     return `<details class="tabla-card fila-pago" data-k="${p.id}">
       <summary style="padding:12px 16px;">
         <div style="min-width:0;">
@@ -7326,7 +7340,7 @@ function viewPagos(){
       <div style="padding:10px 16px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border-bottom:1px solid #e5e1d8;">
         <div><p class="hint" style="margin:0 0 2px;white-space:nowrap;">Prestado (neto)</p><p style="font-size:13.5px;font-weight:700;margin:0;">${money(capitalNeto)}</p></div>
         <div><p class="hint" style="margin:0 0 2px;white-space:nowrap;">Pendiente hoy</p><p style="font-size:13.5px;font-weight:700;margin:0;">${money(r.capitalPendiente||0)}</p></div>
-        <div><p class="hint" style="margin:0 0 2px;white-space:nowrap;">Total cobrado</p><p style="font-size:13.5px;font-weight:700;margin:0;">${money(totalGeneral)}</p></div>
+        <div><p class="hint" style="margin:0 0 2px;white-space:nowrap;">Total cobrado</p><p style="font-size:13.5px;font-weight:700;margin:0;">${money(totalGeneral)}</p></div>${desgloseNeto?`<p class="hint" style="grid-column:1/-1;margin:0;font-size:11.5px;">${desgloseNeto}</p>`:""}
       </div>
       <div style="padding:12px 16px;">
         ${vigentes.length ? `<p class="hint" style="margin:0 0 6px;">Pagos vigentes (${vigentes.length}) · ${money(totalVigente)}</p>${vigentes.map(pg=>filaVigente(p,pg,vigentes)).join("")}` : ""}
