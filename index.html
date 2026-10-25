@@ -1005,6 +1005,10 @@
   /* v25.22: tarjetas azul marino de Inicio y Estadísticas sin degradado */
   [data-inicio="marino"] .ini-hero,[data-inicio="marino"][data-theme="dark"] .ini-hero{background:#1B2A4A !important;}
   [data-inicio="marino"] .est-hero,[data-inicio="marino"][data-theme="dark"] .est-hero{background:#1B2A4A !important;}
+  /* v25.26: en estilo verde, la tarjeta de saldo pendiente usa el verde de la app */
+  [data-inicio="verde"] .card[style*="1B2A4A"]{background:#00796A !important;}
+  [data-inicio="verde"][data-theme="dark"] .card[style*="1B2A4A"]{background:#00574C !important;}
+  [data-inicio="verde"] .card[style*="1B2A4A"] .b-activo,[data-inicio="verde"] .card[style*="1B2A4A"] .b-pagado{color:#F3F0E8 !important;}
 </style>
 </head>
 <body>
@@ -3921,7 +3925,7 @@ function viewInicio(){
       else if(r.proximaFecha){
         // lo que vence hoy y en los próximos 6 días (7 días en total), por día
         const dv = diasParaVencer(r.proximaFecha);
-        if(dv !== null && dv >= 0 && dv <= diasHastaDomingo()){ const m = Number(r.faltaEnCuotaActual) || (r.cuotaActual ? r.cuotaActual.cuota : 0); semana[(6 - diasHastaDomingo()) + dv] += m; montoSem += m; nSem++; }
+        if(dv !== null && dv >= 0 && dv <= diasVentanaCobro()){ const m = Number(r.faltaEnCuotaActual) || (r.cuotaActual ? r.cuotaActual.cuota : 0); if((6 - diasHastaDomingo()) + dv <= 6) semana[(6 - diasHastaDomingo()) + dv] += m; montoSem += m; nSem++; }
       }
     }
   });
@@ -4527,6 +4531,8 @@ function verCartera(){ state._origenInicio = (state.tab==="inicio"); state._deta
 const PLANTILLA_RECORDATORIO_DEFECTO = "Hola {nombre}, su préstamo {codigo} tiene {cuotas} vencida(s) desde el {fecha} ({dias} de atraso), por un total de {monto}{detalleProxima}. Le agradecemos ponerse al día lo antes posible. Cualquier duda, con gusto le atendemos. ¡Gracias!";
 const PLANTILLA_PENDIENTE_DEFECTO = "Hola {nombre}, le recordamos que su préstamo {codigo} tiene una cuota de {cuota} pendiente de cobro, con fecha {fecha}. Cualquier duda, con gusto le atendemos. ¡Gracias!";
 // Días que faltan para el domingo de esta semana (la semana va de lunes a domingo).
+// Los domingos la ventana llega hasta el lunes, para ver la cuota de mañana (un día antes).
+function diasVentanaCobro(){ return Math.max(diasHastaDomingo(), 1); }
 function diasHastaDomingo(){ return 6 - ((new Date(hoyISO() + "T12:00:00").getDay() + 6) % 7); }
 function diasParaVencer(fecha){
   if(!fecha) return null;
@@ -4798,7 +4804,7 @@ function viewColaRecordatorio(){
 }
 function viewCartera(){
   const prox = state.prestamos.map(p=>({p, r:resumen(p)}))
-    .filter(x=>x.r.estado==="Activo" && x.r.proximaFecha && diasParaVencer(x.r.proximaFecha) >= 0 && diasParaVencer(x.r.proximaFecha) <= diasHastaDomingo())
+    .filter(x=>x.r.estado==="Activo" && x.r.proximaFecha && diasParaVencer(x.r.proximaFecha) >= 0 && diasParaVencer(x.r.proximaFecha) <= diasVentanaCobro())
     .sort((a,b)=> new Date(a.r.proximaFecha) - new Date(b.r.proximaFecha));
   const vencidos = state.prestamos.map(p=>({p, r:resumen(p)}))
     .filter(x=>x.r.estado==="Activo" && x.r.proximaFecha && diasAtraso(x.r.proximaFecha)>0)
@@ -5488,7 +5494,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "25.24";
+const JR_VERSION = "25.26";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
@@ -5836,7 +5842,7 @@ function datosEstadisticas(rango){
       } else {
         alDia++;
         const dv = r.proximaFecha ? diasParaVencer(r.proximaFecha) : null;
-        if(dv !== null && dv >= 0 && dv <= diasHastaDomingo()){ porCobrar7 += Number(r.faltaEnCuotaActual) || (r.cuotaActual ? r.cuotaActual.cuota : 0); nPorCobrar7++; }
+        if(dv !== null && dv >= 0 && dv <= diasVentanaCobro()){ porCobrar7 += Number(r.faltaEnCuotaActual) || (r.cuotaActual ? r.cuotaActual.cuota : 0); nPorCobrar7++; }
       }
       porCliente[p.clienteId] = (porCliente[p.clienteId] || 0) + saldo;
     } else cerrados++;
