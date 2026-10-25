@@ -5495,7 +5495,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "25.30";
+const JR_VERSION = "25.31";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
@@ -6142,7 +6142,23 @@ function generarEstadoCuentaPDF(p, cli, r){
   doc.text(`Tasa: ${p.tasa}% · ${p.periodo}`, col2, y); y += 4.2;
   // Con modificaciones, p.fechaInicio es la del último refinanciamiento: el inicio real es el de la primera.
   const _m0i = (p.modificaciones && p.modificaciones.length) ? p.modificaciones[0] : null;
-  doc.text(`Fecha de inicio: ${fmtDate(_m0i ? (_m0i.fechaInicioAnterior || _m0i.fecha || p.fechaInicio) : p.fechaInicio)}`, col2, y);
+  let _fIni = p.fechaInicio;
+  if(_m0i){
+    if(_m0i.fechaInicioAnterior){ _fIni = _m0i.fechaInicioAnterior; }
+    else {
+      // Modificaciones antiguas no guardaron la fecha original: se estima como un período antes del
+      // primer pago real (la primera cuota cae un período después del inicio).
+      const _fp = []; (p.pagos||[]).forEach(g=>_fp.push(g)); (p.modificaciones||[]).forEach(m=>(m.pagosPrevios||[]).forEach(g=>_fp.push(g)));
+      const _ds = _fp.filter(g=>g.tipo!=="enganche" && g.fecha).map(g=>g.fecha).sort();
+      _fIni = _m0i.fecha || p.fechaInicio;
+      if(_ds.length){
+        const d0 = new Date(_ds[0] + "T12:00:00"); d0.setDate(d0.getDate() - (DIAS_PERIODO[_m0i.periodoAnterior || p.periodo] || 0));
+        const est = d0.toISOString().slice(0,10);
+        if(est < _fIni) _fIni = est;
+      }
+    }
+  }
+  doc.text(`Fecha de inicio: ${fmtDate(_fIni)}`, col2, y);
   doc.setTextColor(20);
   y += 7;
 
