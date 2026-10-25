@@ -2757,7 +2757,7 @@ document.documentElement.setAttribute("data-inicio", state.config.estiloInicio =
     // quedaba pegado en la última opción elegida sin importar cuál se marcara. Se corrige
     // forzando el valor real después de pintar, en vez de confiar solo en "selected".
     const selWA = document.getElementById("f_whatsappApp");
-    if(selWA) selWA.value = (state.config.whatsappApp==="business"||state.config.whatsappApp==="normal") ? state.config.whatsappApp : "auto";
+    if(selWA) selWA.value = (state.config.whatsappApp==="business"||state.config.whatsappApp==="normal"||state.config.whatsappApp==="preguntar") ? state.config.whatsappApp : "auto";
   }
   if(_esNavegacion && document.startViewTransition){
     document.startViewTransition(() => {
@@ -4268,6 +4268,7 @@ function viewAjustes(){
         <option value="auto" ${(!state.config.whatsappApp||state.config.whatsappApp==="auto")?"selected":""}>El predeterminado del celular</option>
         <option value="normal" ${state.config.whatsappApp==="normal"?"selected":""}>WhatsApp normal (Android)</option>
         <option value="business" ${state.config.whatsappApp==="business"?"selected":""}>WhatsApp Business (Android)</option>
+        <option value="preguntar" ${state.config.whatsappApp==="preguntar"?"selected":""}>Preguntar cada vez (Android)</option>
       </select>
     </label>
   </div>
@@ -5494,7 +5495,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "25.26";
+const JR_VERSION = "25.27";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
@@ -7481,6 +7482,36 @@ let _recargaIntencional = false;
 // la protección se reactiva sola un instante después (por si la app externa no estaba
 // instalada y el usuario se quedó aquí mismo, sigue protegido para el resto de la sesión).
 let _saliendoAAppExterna = false;
+// ── Elegir a qué WhatsApp enviar, en el momento (Ajustes > "Preguntar cada vez") ──
+// Intercepta el toque en un enlace de WhatsApp y muestra dos opciones. Solo en Android.
+function _waIntentPara(url, paquete){
+  const m = url.match(/wa\.me\/(\d+)\?text=(.*)$/);
+  if(!m) return url;
+  return "intent://send?phone=" + m[1] + "&text=" + m[2] + "#Intent;scheme=whatsapp;package=" + paquete + ";S.browser_fallback_url=" + encodeURIComponent(url) + ";end";
+}
+let _waPend = null;
+function waElegir(paquete){
+  const p = _waPend; _waPend = null; jrCerrarModal();
+  if(!p || !paquete) return;
+  abrirEnlaceExterno();
+  window.location.href = _waIntentPara(p.url, paquete);
+  if(p.cola) setTimeout(marcarEnviadoYSiguiente, 400);
+}
+document.addEventListener("click", function(e){
+  const a = e.target.closest && e.target.closest("a[href^='https://wa.me/']");
+  if(!a || state.config.whatsappApp !== "preguntar" || !/Android/i.test(navigator.userAgent||"")) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  _waPend = { url: a.getAttribute("href"), cola: /marcarEnviadoYSiguiente/.test(a.getAttribute("onclick")||"") };
+  const root = document.getElementById("jr-modal-root");
+  if(!root) return;
+  root.innerHTML = `<div class="jr-modal-overlay"><div class="jr-modal-card">
+    <p class="jr-modal-msg" style="margin-bottom:14px;">¿Con cuál WhatsApp lo envías?</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="btn btn-gold" onclick="waElegir('com.whatsapp')">WhatsApp</button>
+      <button class="btn btn-gold" onclick="waElegir('com.whatsapp.w4b')">WhatsApp Business</button>
+      <button class="btn btn-outline" onclick="waElegir(null)">Cancelar</button>
+    </div></div></div>`;
+}, true);
 function abrirEnlaceExterno(){
   _saliendoAAppExterna = true;
   setTimeout(function(){ _saliendoAAppExterna = false; }, 1500);
