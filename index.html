@@ -5532,7 +5532,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "25.34";
+const JR_VERSION = "25.35";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
@@ -7246,12 +7246,28 @@ function liquidarAnticipado(id){
   const fechaBase = r.pagosHechos>0 ? r.tabla[r.pagosHechos-1].fecha : p.fechaInicio;
   const diasReales = Math.max(0, Math.round((new Date(fechaLiq+"T00:00:00") - new Date(fechaBase+"T00:00:00"))/86400000));
   const capitalPendiente = r.capitalPendiente!=null ? r.capitalPendiente : Number(p.capital)||0;
-  const interes = Math.round(capitalPendiente*tasaDiaria*diasReales*100)/100;
+  // Interés día por día sobre el saldo que había cada día: los abonos a capital recibidos en este período
+  // (aún sin cuota completada) bajan el saldo desde SU fecha, no desde el inicio del período.
+  const _msDia = 86400000;
+  const _dia = function(f){ return Math.round((new Date(f+"T00:00:00") - new Date(fechaBase+"T00:00:00"))/_msDia); };
+  const abonosPeriodo = (p.ajustesCapital||[]).filter(function(x){ return x.despuesDeFila > (r.pagosHechos||0) && Number(x.monto)>0; })
+    .map(function(x){ return { d: Math.min(diasReales, Math.max(0, _dia(x.fecha||fechaBase))), monto: Number(x.monto)||0 }; })
+    .sort(function(x,y){ return x.d - y.d; });
+  let capSeg = capitalPendiente + abonosPeriodo.reduce(function(s,x){ return s + x.monto; }, 0);
+  let diaPrev = 0, interesSeg = 0;
+  const tramos = [];
+  abonosPeriodo.forEach(function(x){
+    if(x.d > diaPrev){ interesSeg += capSeg*tasaDiaria*(x.d - diaPrev); tramos.push({ dias: x.d - diaPrev, cap: capSeg }); }
+    capSeg -= x.monto; diaPrev = Math.max(diaPrev, x.d);
+  });
+  if(diasReales > diaPrev){ interesSeg += capSeg*tasaDiaria*(diasReales - diaPrev); tramos.push({ dias: diasReales - diaPrev, cap: capSeg }); }
+  const interes = Math.round(interesSeg*100)/100;
   const total = capitalPendiente + interes;
+  const detalleTramos = abonosPeriodo.length ? "\n(" + tramos.map(function(x){ return x.dias + " día" + (x.dias===1?"":"s") + " sobre " + money(x.cap); }).join(" + ") + ")" : "";
   mostrarConfirmacion(
     `Liquidación anticipada al ${fmtDate(fechaLiq)}:\n` +
     `Días reales transcurridos: ${diasReales}\n` +
-    `Interés prorateado: ${money(interes)}\n` +
+    `Interés prorateado: ${money(interes)}${detalleTramos}\n` +
     `Capital pendiente: ${money(capitalPendiente)}\n` +
     `Total a pagar: ${money(total)}\n\n` +
     `¿Registrar este pago y cerrar el préstamo?`,
