@@ -2158,7 +2158,13 @@ function resumen(p, fechaRef){
         fecha: pgLiq.fecha, saldoInicial: Number(pgLiq.capital)||0, cuota: Number(pgLiq.monto)||0,
         interes: Number(pgLiq.interes)||0, abono: Number(pgLiq.capital)||0, saldo: 0, liquidacion: true });
     }
-    const cuotaRegL = tabla[completasL] ? tabla[completasL].cuota : (tabla[tabla.length-1] ? tabla[tabla.length-1].cuota : 0);
+    // "Cuota" de un préstamo cerrado = la última cuota normal realmente cobrada (sin filas con abono extra).
+    const _ajL = new Set((p.ajustesCapital||[]).map(x=>x.despuesDeFila));
+    const _hechasL = tabla.slice(0, completasL);
+    const _normalL = _hechasL.filter(x=>!_ajL.has(x.n)).pop();
+    const cuotaRegL = _normalL ? _normalL.cuota
+      : (_hechasL.length ? (esIndef ? _hechasL[_hechasL.length-1].interes : _hechasL[0].cuota)
+      : (tabla[0] ? (esIndef ? tabla[0].interes : tabla[0].cuota) : 0));
     return { cuota: cuotaRegL, saldoPendiente:0, capitalPendiente:0, estado:"Pagado", proximaFecha:null,
       tabla: filasL, totalCuotasOriginal: tabla.length, pagosHechos: completasL, cuotaActual:null, abonadoEnCuotaActual:0, faltaEnCuotaActual:0,
       moraTotal, totalPagado };
@@ -5543,7 +5549,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "25.37";
+const JR_VERSION = "25.38";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
@@ -6114,7 +6120,7 @@ function generarAmortizacionPDF(p, cli, r, mostrarTotales){
   doc.setFontSize(9);
   doc.text(`${p.codigo}  ·  ${cli?cli.nombre:"—"}  ·  Capital ${money(p.capital)}  ·  Tasa ${p.tasa}%  ·  ${p.periodo}  ·  ${p.metodo}`, 14, 23);
   const esIndefPDF = p.metodo === METODOS[5];
-  const filasBase = esIndefPDF
+  const filasBase = (esIndefPDF && !p.liquidadoAnticipado)
     ? (function(){
         const hoy = hoyISO();
         const visibles = r.tabla.filter((f,i)=> i===0 || addDays(r.tabla[i-1].fecha,1) <= hoy);
@@ -6280,7 +6286,7 @@ function generarEstadoCuentaPDF(p, cli, r){
   doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.text("Tabla de amortización", 14, y);
   doc.setFont("helvetica","normal"); y += 3;
   const esIndefEC = p.metodo === METODOS[5];
-  const filasEC = esIndefEC
+  const filasEC = (esIndefEC && !p.liquidadoAnticipado)
     ? (function(){
         const hoy = hoyISO();
         const visibles = r.tabla.filter((f,i)=> i===0 || addDays(r.tabla[i-1].fecha,1) <= hoy);
