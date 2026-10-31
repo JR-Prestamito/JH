@@ -1314,8 +1314,20 @@ let state = {
   q: "",
   qPrestamos: ""
 };
+// Tema automático: si el modo es "auto", se sigue el modo claro/oscuro del teléfono.
+function sincronizarTemaAuto(){
+  if(state.config.temaModo === "auto"){
+    try{ state.config.temaOscuro = !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches); }catch(e){}
+  }
+}
+try{
+  const _mqTema = window.matchMedia("(prefers-color-scheme: dark)");
+  const _onTema = function(){ if(state.config.temaModo === "auto"){ sincronizarTemaAuto(); try{ render(); }catch(e){} } };
+  if(_mqTema.addEventListener) _mqTema.addEventListener("change", _onTema); else if(_mqTema.addListener) _mqTema.addListener(_onTema);
+}catch(e){}
 // Se aplica el tema antes del primer render para que no haya un parpadeo de tema claro
 // al abrir la app si el modo oscuro está activado.
+sincronizarTemaAuto();
 document.documentElement.setAttribute("data-theme", state.config.temaOscuro ? "dark" : "light");
 document.documentElement.setAttribute("data-inicio", state.config.estiloInicio === "marino" ? "marino" : "verde");
   document.documentElement.setAttribute("data-ayudas", state.config.mostrarAyudas ? "on" : "off");
@@ -2632,6 +2644,7 @@ function medirEncabezado(){
 }
 window.addEventListener("resize", medirEncabezado);
 function render(){
+  sincronizarTemaAuto();
   document.documentElement.setAttribute("data-theme", state.config.temaOscuro ? "dark" : "light");
 document.documentElement.setAttribute("data-inicio", state.config.estiloInicio === "marino" ? "marino" : "verde");
   document.documentElement.setAttribute("data-ayudas", state.config.mostrarAyudas ? "on" : "off");
@@ -4238,9 +4251,12 @@ function viewAjustes(){
   </div>
   <div class="row-card" style="display:block;" id="sec-apariencia">
     <p style="font-weight:600;margin:0 0 4px;">Apariencia</p>
-    <label style="display:flex;align-items:center;gap:8px;margin-bottom:0;cursor:pointer;">
-      <input type="checkbox" style="width:auto;" ${state.config.temaOscuro?"checked":""} onchange="state.config.temaOscuro=this.checked; document.documentElement.setAttribute('data-theme', this.checked?'dark':'light'); save(); render();">
-      <span style="margin:0;font-size:14px;">Modo oscuro</span>
+    <label style="margin-bottom:0;"><span>Modo</span>
+      <select id="f_temaModo" onchange="state.config.temaModo=this.value; if(this.value==='auto'){ sincronizarTemaAuto(); } else { state.config.temaOscuro=(this.value==='oscuro'); } document.documentElement.setAttribute('data-theme', state.config.temaOscuro?'dark':'light'); save(); render();">
+        <option value="claro" ${(state.config.temaModo==="auto"||state.config.temaOscuro)?"":"selected"}>Claro</option>
+        <option value="oscuro" ${(state.config.temaModo!=="auto"&&state.config.temaOscuro)?"selected":""}>Oscuro</option>
+        <option value="auto" ${state.config.temaModo==="auto"?"selected":""}>Automático (según el teléfono)</option>
+      </select>
     </label>
     <p class="hint nota-ayuda" style="margin:6px 0 0;">Los recibos y reportes que imprimes o envías siempre se ven en claro, pensados para papel.</p>
     <label style="margin:14px 0 0;"><span>Color de la app</span>
@@ -5631,7 +5647,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "25.44";
+const JR_VERSION = "25.45";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
