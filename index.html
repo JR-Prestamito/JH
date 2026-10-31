@@ -1014,6 +1014,78 @@
   [data-inicio="verde"][data-theme="dark"] .chip-var{color:#80CBC4;background:rgba(128,203,196,.12);border-color:rgba(128,203,196,.40);}
   [data-inicio="verde"] .chips-det > summary{color:#00796A;}
   [data-inicio="verde"][data-theme="dark"] .chips-det > summary{color:#80CBC4;}
+  /* v25.39: etiquetas de estado con fondo, tarjeta de préstamo más suave y secciones de la lista */
+  .badge.b-activo,.badge.b-pagado{background:rgba(0,121,106,.14) !important;color:#00796A;box-shadow:none !important;padding:3px 10px;}
+  .badge.b-vencido{background:rgba(176,57,47,.13) !important;color:#B0392F;box-shadow:none !important;padding:3px 10px;}
+  .badge.b-refinanciado{background:rgba(27,42,74,.10) !important;color:#1B2A4A;box-shadow:none !important;padding:3px 10px;}
+  .badge.b-porcobrar{background:rgba(201,151,62,.20) !important;color:#A97B25;box-shadow:none !important;padding:3px 10px;}
+  [data-theme="dark"] .badge.b-activo,[data-theme="dark"] .badge.b-pagado{background:rgba(0,121,106,.32) !important;color:#80CBC4;}
+  [data-theme="dark"] .badge.b-vencido{background:rgba(176,57,47,.32) !important;color:#F0908A;}
+  [data-theme="dark"] .badge.b-refinanciado{background:rgba(143,178,232,.18) !important;color:#8FB2E8;}
+  [data-theme="dark"] .badge.b-porcobrar{background:rgba(201,151,62,.26) !important;color:#C9973E;}
+  .fila-inicio .badge.b-activo,.fila-inicio .badge.b-pagado,.fila-inicio .badge.b-vencido,.fila-inicio .badge.b-refinanciado,.fila-inicio .badge.b-porcobrar{padding:2px 9px;}
+  /* sobre la tarjeta azul/verde del préstamo: pastilla crema que se distingue del texto */
+  .card[style*="1B2A4A"] .badge{background:#F3F0E8 !important;}
+  .card[style*="1B2A4A"] .badge.b-activo,.card[style*="1B2A4A"] .badge.b-pagado{color:#00796A !important;}
+  .card[style*="1B2A4A"] .badge.b-vencido{color:#B0392F !important;}
+  .card[style*="1B2A4A"] .badge.b-refinanciado{color:#1B2A4A !important;}
+  .card[style*="1B2A4A"] > p[style*="font-size:12px"],.card[style*="1B2A4A"] .flex-gap > span{color:rgba(243,240,232,.78) !important;}
+  /* secciones de la lista de préstamos */
+  .panel-prox .section-title.dorado.st-venc,.panel-prox .section-title.dorado.st-act,.panel-prox .section-title.dorado.st-pag,.panel-prox .section-title.dorado.st-ref{text-transform:uppercase;letter-spacing:.07em;font-size:12px;font-weight:700;}
+  .panel-prox .section-title.dorado.st-venc{color:#B0392F;} .panel-prox .section-title.dorado.st-venc::before{background:#B0392F;}
+  .panel-prox .section-title.dorado.st-act{color:#00796A;} .panel-prox .section-title.dorado.st-act::before{background:#00796A;}
+  .panel-prox .section-title.dorado.st-pag{color:#A97B25;} .panel-prox .section-title.dorado.st-pag::before{background:#C9973E;}
+  .panel-prox .section-title.dorado.st-ref{color:#1B2A4A;} .panel-prox .section-title.dorado.st-ref::before{background:#1B2A4A;}
+  [data-theme="dark"] .panel-prox .section-title.dorado.st-venc{color:#F0908A;} [data-theme="dark"] .panel-prox .section-title.dorado.st-venc::before{background:#F0908A;}
+  [data-theme="dark"] .panel-prox .section-title.dorado.st-act{color:#80CBC4;} [data-theme="dark"] .panel-prox .section-title.dorado.st-act::before{background:#80CBC4;}
+  [data-theme="dark"] .panel-prox .section-title.dorado.st-pag{color:#C9973E;}
+  [data-theme="dark"] .panel-prox .section-title.dorado.st-ref{color:#8FB2E8;} [data-theme="dark"] .panel-prox .section-title.dorado.st-ref::before{background:#8FB2E8;}
+  /* v25.40: etiqueta "Pagado" en dorado (distinta de Activo) y tarjeta de saldo del préstamo reorganizada */
+  .badge.b-pagado{background:rgba(201,151,62,.20) !important;color:#A97B25;}
+  [data-theme="dark"] .badge.b-pagado{background:rgba(201,151,62,.26) !important;color:#C9973E;}
+  .card[style*="1B2A4A"] .badge.b-pagado{color:#A97B25 !important;}
+  .card[style*="1B2A4A"] .dp-met,.card[style*="1B2A4A"] p.dp-sub{color:rgba(243,240,232,.78) !important;}
+  /* v25.41: etiqueta de estado sobre la tarjeta del préstamo según estilo; fondo en etiquetas de Estadísticas; flujo neto en color */
+  /* azul marino (y respaldo): fondo claro translúcido, texto de color suave */
+  .card[style*="1B2A4A"] .badge{background:rgba(243,240,232,.12) !important;}
+  .card[style*="1B2A4A"] .badge.b-activo{color:#80CBC4 !important;}
+  .card[style*="1B2A4A"] .badge.b-pagado{color:#E3BE6B !important;}
+  .card[style*="1B2A4A"] .badge.b-vencido{color:#F0908A !important;}
+  .card[style*="1B2A4A"] .badge.b-refinanciado{color:#9DBBEA !important;}
+  /* verde confianza: pastilla oscura translúcida sobre el verde */
+  [data-inicio="verde"] .card[style*="1B2A4A"] .badge{background:rgba(0,0,0,.24) !important;}
+  [data-inicio="verde"] .card[style*="1B2A4A"] .badge.b-activo{color:#F3F0E8 !important;}
+  [data-inicio="verde"] .card[style*="1B2A4A"] .badge.b-pagado{color:#F0CF85 !important;}
+  [data-inicio="verde"] .card[style*="1B2A4A"] .badge.b-vencido{color:#F0908A !important;}
+  [data-inicio="verde"] .card[style*="1B2A4A"] .badge.b-refinanciado{color:#B7CFF2 !important;}
+  /* Estadísticas: etiqueta "Salud de la cartera" con fondo */
+  .est-pill{padding:4px 10px !important;}
+  .est-pill.ok{background:rgba(0,121,106,.15) !important;color:#00796A;}
+  .est-pill.med{background:rgba(201,151,62,.22) !important;color:#A97B25;}
+  .est-pill.mal{background:rgba(176,57,47,.15) !important;color:#B0392F;}
+  [data-theme="dark"] .est-pill.ok{background:rgba(0,121,106,.32) !important;color:#80CBC4;}
+  [data-theme="dark"] .est-pill.med{background:rgba(201,151,62,.26) !important;color:#C9973E;}
+  [data-theme="dark"] .est-pill.mal{background:rgba(176,57,47,.32) !important;color:#F0908A;}
+  /* Flujo neto de la tarjeta: positivo en verde, negativo en rojo */
+  .est-hero .est-h-pie b.pos{color:#9BE3C4 !important;}
+  .est-hero .est-h-pie b.neg{color:#F0908A !important;}
+  [data-inicio="verde"] .est-hero .est-h-pie b.pos{color:#C4F5E2 !important;}
+  [data-inicio="verde"] .est-hero .est-h-pie b.neg{color:#F0908A !important;}
+  /* v25.42: etiqueta de la tarjeta = misma que en la lista (marino); dorado y rojo de la paleta */
+  [data-inicio="marino"] .card[style*="1B2A4A"] .badge.b-activo{background:rgba(0,121,106,.32) !important;color:#80CBC4 !important;}
+  [data-inicio="marino"] .card[style*="1B2A4A"] .badge.b-pagado{background:rgba(201,151,62,.26) !important;color:#C9973E !important;}
+  [data-inicio="marino"] .card[style*="1B2A4A"] .badge.b-vencido{background:rgba(176,57,47,.32) !important;color:#F0908A !important;}
+  [data-inicio="marino"] .card[style*="1B2A4A"] .badge.b-refinanciado{background:rgba(143,178,232,.18) !important;color:#8FB2E8 !important;}
+  [data-inicio="verde"] .card[style*="1B2A4A"] .badge.b-activo{color:#80CBC4 !important;}
+  [data-inicio="verde"] .card[style*="1B2A4A"] .badge.b-pagado{color:#C9973E !important;}
+  [data-inicio="verde"] .card[style*="1B2A4A"] .badge.b-vencido{color:#F0908A !important;}
+  [data-inicio="verde"] .card[style*="1B2A4A"] .badge.b-refinanciado{color:#8FB2E8 !important;}
+  .est-hero .est-h-pie b.neg,[data-inicio="verde"] .est-hero .est-h-pie b.neg{color:#B0392F !important;}
+  /* v25.43: flujo neto negativo en rojo claro (legible sobre verde y marino) */
+  .est-hero .est-h-pie b.neg{color:#F0908A !important;}
+  [data-inicio="verde"] .est-hero .est-h-pie b.neg{color:#F0908A !important;}
+  /* v25.44: rojo suave estandarizado en el flujo neto negativo */
+  .est-hero .est-h-pie b.neg,[data-inicio="verde"] .est-hero .est-h-pie b.neg{color:#F0908A !important;}
 </style>
 </head>
 <body>
@@ -4533,18 +4605,20 @@ function viewPrestamos(){
   // un vistazo cuáles préstamos siguen activos y cuáles ya están cerrados de una forma u
   // otra. Se calcula el estado de cada uno una sola vez aquí, no dentro de cada grupo, para
   // no llamar resumen() dos veces por préstamo.
-  const conEstado = filtrados.map(p=>({p, estado: resumen(p).estado}));
-  const activos = conEstado.filter(x=>x.estado==="Activo").map(x=>x.p);
+  const conEstado = filtrados.map(p=>{ const rr = resumen(p); return {p, estado: rr.estado, venc: rr.estado==="Activo" && !!rr.proximaFecha && diasAtraso(rr.proximaFecha)>0}; });
+  const vencidos = conEstado.filter(x=>x.venc).map(x=>x.p);
+  const activos = conEstado.filter(x=>x.estado==="Activo" && !x.venc).map(x=>x.p);
   const pagados = conEstado.filter(x=>x.estado==="Pagado").map(x=>x.p);
   const refinanciados = conEstado.filter(x=>x.estado==="Refinanciado").map(x=>x.p);
   const grupos = [
-    { label:"Activos", lista:activos },
-    { label:"Pagados", lista:pagados },
-    { label:"Refinanciados", lista:refinanciados }
+    { label:"Vencidos", cls:"st-venc", lista:vencidos },
+    { label:"Activos", cls:"st-act", lista:activos },
+    { label:"Pagados", cls:"st-pag", lista:pagados },
+    { label:"Refinanciados", cls:"st-ref", lista:refinanciados }
   ];
   grupos.forEach(g=>{
     if(g.lista.length===0) return;
-    html += `<div class="panel-prox panel-lista"><p class="section-title dorado">${g.label} (${g.lista.length})</p>`;
+    html += `<div class="panel-prox panel-lista"><p class="section-title dorado ${g.cls}">${g.label} (${g.lista.length})</p>`;
     g.lista.forEach(p=>{ html += filaPrestamo(p); });
     html += `</div>`;
   });
@@ -4761,6 +4835,7 @@ function construirColaRecordatorios(tipo){
     if(tipo==="vencidos"){
       const atraso = diasAtraso(r.proximaFecha);
       const pendiente = calcularPendiente(p, r, true);
+      if((window._moraOff||{})[p.id]) pendiente.mora = 0;
       mensaje = mensajeRecordatorio(p, cli, r, atraso, pendiente);
     } else {
       mensaje = mensajePendiente(p, cli, r);
@@ -5412,6 +5487,7 @@ function viewDetallePrestamo(){
 
   const pendiente = calcularPendiente(p, r);
   const pendienteRecordatorio = calcularPendiente(p, r, true);
+  if((window._moraOff||{})[p.id]) pendienteRecordatorio.mora = 0;   // casilla "Cobrar la mora" desmarcada: el aviso tampoco la incluye
   const sugerido = pendiente.monto;
   const moraCalc = pendiente.mora;
   const nVenc = pendiente.nVenc;
@@ -5434,10 +5510,16 @@ function viewDetallePrestamo(){
 
   return `
     <div class="card" style="background:${NAVY};margin-bottom:16px;">
-      <p style="color:#F3F0E8;font-size:12px;margin:0;">${p.codigo} · ${cli?cli.nombre:"—"}</p>
-      <p style="color:#F3F0E8;font-size:22px;font-weight:700;margin:4px 0 0;">${money(r.saldoPendiente)}</p>
-      <p style="color:#F3F0E8;font-size:12px;margin:2px 0 10px;">saldo pendiente</p>
-      <div class="flex-gap">${badge(atraso>0?"Vencido":r.estado)}<span style="color:#F3F0E8;font-size:12px;">${p.metodo}</span></div>
+      <p style="color:#F3F0E8;font-size:18px;font-weight:600;line-height:1.25;margin:0;">${p.codigo} · ${cli?cli.nombre:"—"}</p>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin-top:10px;">
+        <div>
+          <p style="color:#F3F0E8;font-size:22px;font-weight:700;margin:0;">${money(r.saldoPendiente)}</p>
+          <p class="dp-sub" style="color:#F3F0E8;font-size:12px;margin:2px 0 0;">Saldo pendiente</p>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;text-align:right;">
+          ${badge(atraso>0?"Vencido":r.estado)}<span class="dp-met" style="color:#F3F0E8;font-size:12px;">${p.metodo}</span>
+        </div>
+      </div>
     </div>
     <div class="grid2">
       <div class="card" style="border:1px solid #e5e1d8;"><p class="lbl">Capital</p><p style="font-size:15px;font-weight:600;margin:0;">${money(p.capital)}</p></div>
@@ -5460,9 +5542,9 @@ function viewDetallePrestamo(){
       ${r.abonadoEnCuotaActual>0 ? `<p class="hint" style="color:#C9973E;font-weight:600;margin:0 0 10px;">Ya abonaste ${money(r.abonadoEnCuotaActual)} a esta cuota. Falta ${money(r.faltaEnCuotaActual)}.</p>` : ""}
       ${moraCalc>0 ? `<p class="hint" style="color:#B0392F;margin:0 0 6px;">${nVenc>1 ? `Tienes ${nVenc} cuotas vencidas. Mora total calculada: ${money(moraCalc)}` : `Este pago tiene ${pendiente.diasAtr} día(s) de atraso. Mora calculada: ${money(moraCalc)}`}</p>
       <p class="hint nota-ayuda" style="margin:0 0 10px;">Cómo se calculó: ${pendiente.detalleMora.map(d=>`${textoMora(d)}`).join(" + ")}${pendiente.detalleMora.length>1?` → total ${money(moraCalc)}.${(state.config.moraModo!=="cuota" && (!state.config.moraBase||state.config.moraBase==="cuota")) ? ` La mora se calcula por separado para cada cuota vencida, cada una según sus propios días de atraso — por eso el ${nVenc}° vencimiento no acumula los mismos ${pendiente.diasAtr} días que la primera cuota vencida.` : ""}`:"."}</p>
-      <label style="display:flex;align-items:center;gap:6px;margin-bottom:12px;"><input type="checkbox" id="incluirMora" checked style="width:auto;" onchange="document.getElementById('montoPago').value = this.checked ? '${round2(sugerido+moraCalc).toFixed(2)}' : '${sugerido.toFixed(2)}';"><span style="margin:0;font-size:13px;color:#6B7080;">Cobrar la mora junto con este pago</span></label>` : ""}
+      <label style="display:flex;align-items:center;gap:6px;margin-bottom:12px;"><input type="checkbox" id="incluirMora" ${(window._moraOff||{})[p.id]?"":"checked"} style="width:auto;" onchange="(window._moraOff=window._moraOff||{})['${p.id}']=!this.checked; render();"><span style="margin:0;font-size:13px;color:#6B7080;">Cobrar la mora junto con este pago</span></label>` : ""}
       <div class="flexrow">
-        <input type="text" inputmode="decimal" id="montoPago" value="${moraCalc>0 ? round2(sugerido+moraCalc).toFixed(2) : ""}" placeholder="${sugerido.toFixed(2)}">
+        <input type="text" inputmode="decimal" id="montoPago" value="${(moraCalc>0 && !(window._moraOff||{})[p.id]) ? round2(sugerido+moraCalc).toFixed(2) : ""}" placeholder="${sugerido.toFixed(2)}">
         <button class="btn btn-gold" style="width:auto;padding:0 18px;" onclick="registrarPago('${p.id}')">Pagar</button>
       </div>
       <label style="display:block;margin:10px 0 0;"><span style="font-size:12.5px;color:#6B7080;">Fecha del pago</span><input type="date" id="fechaPago" value="${hoyISO()}" max="${hoyISO()}"></label>
@@ -5549,7 +5631,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "25.38";
+const JR_VERSION = "25.44";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
@@ -7210,6 +7292,7 @@ function registrarPago(id){
       if(r2.proximaFecha) msg += `\nPróxima cuota: ${fmtDate(r2.proximaFecha)}.`;
     }
     mostrarAlerta(msg);
+    if(window._moraOff) delete window._moraOff[id];
   }, { textoAceptar:"Registrar" });
 }
 function abrirAbonoCapital(){
