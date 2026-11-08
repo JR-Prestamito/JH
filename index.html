@@ -7870,9 +7870,19 @@ function jrAtrasEnApp(){
     history.back(); setTimeout(function(){ history.back(); }, 80);
   }, { textoAceptar: "Salir", textoCancelar: "Quedarme" });
 }
+// Al tocar atrás se vuelve a la entrada "base"; para quedarse en la app se avanza de nuevo a la entrada
+// "guardia" que ya existe (no se crea una nueva: Chrome se salta las entradas creadas sin que el usuario
+// toque la pantalla, y por eso la segunda vez que se tocaba atrás la app se cerraba).
+let _ignorarPop = false;
 window.addEventListener("popstate", function(){
   if(_salidaConfirmada) return;
-  jrGuardiaAtras();
+  if(_ignorarPop){ _ignorarPop = false; return; }
+  if(history.state && history.state.jr === "guardia") return;
+  _ignorarPop = true;
+  history.forward();
+  setTimeout(function(){
+    if(_ignorarPop){ _ignorarPop = false; jrGuardiaAtras(); }      // respaldo: si no había hacia dónde avanzar
+  }, 400);
   jrAtrasEnApp();
 });
 
