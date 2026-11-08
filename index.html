@@ -1102,6 +1102,8 @@
   .est-ag-f .m small{display:block;font-size:10.5px;font-weight:500;opacity:.7;text-align:right;color:inherit;}
   [data-theme="dark"] .est-ag-f{background:rgba(255,255,255,.06);}
   [data-theme="dark"] .est-ag-f .m{color:#F0908A;}
+  select.campo-fijo{opacity:1;background:#F3F0E8;color:#1B2A4A;font-weight:600;border:1px solid #E5E1D8;-webkit-text-fill-color:#1B2A4A;}
+  [data-theme="dark"] select.campo-fijo{background:#1B212C;color:#F3F0E8;border-color:rgba(243,240,232,.12);-webkit-text-fill-color:#F3F0E8;}
 </style>
 </head>
 <body>
@@ -5074,12 +5076,19 @@ function viewCartera(){
   return html;
 }
 
+// Un préstamo con pagos registrados ya no se puede reescribir: capital, tasa, período, método, cuotas,
+// fechas y cliente quedan bloqueados (para cambios reales se usa Refinanciar o Abonar a capital).
+function prestamoTienePagos(p){
+  return !!p && ((p.pagos||[]).length > 0 || (Number(pagosPreviosDe(p))||0) > 0);
+}
 function viewNuevoPrestamo(){
   const f = window._nf;
   const esIndef = f.metodo === METODOS[5];
   const editando = !!f.editId;
+  const bloq = editando && prestamoTienePagos(state.prestamos.find(x=>x.id===f.editId));
+  const dis = bloq ? " disabled class='campo-fijo'" : "";
 
-  let opts = state.clientes.map(c=>`<option value="${c.id}" ${c.id===f.clienteId?"selected":""}>${c.nombre}</option>`).join("");
+  let opts = (f.clienteId ? "" : `<option value="">— Elige un cliente —</option>`) + state.clientes.map(c=>`<option value="${c.id}" ${c.id===f.clienteId?"selected":""}>${c.nombre}</option>`).join("");
   let metodoOpts = METODOS.map(m=>`<option ${m===f.metodo?"selected":""}>${m}</option>`).join("");
   let periodoOpts = PERIODOS.map(pd=>`<option ${pd===f.periodo?"selected":""}>${pd}</option>`).join("");
 
@@ -5101,19 +5110,19 @@ function viewNuevoPrestamo(){
   return `
     ${state.clientes.length===0 ? `<p style="color:#B0392F;font-size:13px;">Agrega un cliente primero en la pestaña Clientes.</p>` : ""}
     <label><span>N° de préstamo</span><input id="nf_codigo" type="text" value="${f.codigo||""}" ${editando?"disabled class='campo-fijo'":""} oninput="window._nf.codigo=this.value.toUpperCase(); render()"></label>
-    <label><span>Cliente</span><select onchange="window._nf.clienteId=this.value; render()">${opts}</select></label>
+    <label><span>Cliente</span><select id="nf_cliente"${dis} onchange="window._nf.clienteId=this.value; render()">${opts}</select></label>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-      <label style="margin:0;"><span>Capital a financiar (${simboloMoneda()})</span><input id="nf_capital" type="text" inputmode="decimal" value="${f.capital}" oninput="window._nf.capital=filtrarDecimal(this.value); render()"></label>
-      <label style="margin:0;"><span>Tasa de interés (%)</span><input id="nf_tasa" type="text" inputmode="decimal" value="${f.tasa}" oninput="window._nf.tasa=filtrarDecimal(this.value); render()"></label>
+      <label style="margin:0;"><span>Capital a financiar (${simboloMoneda()})</span><input id="nf_capital"${dis} type="text" inputmode="decimal" value="${f.capital}" oninput="window._nf.capital=filtrarDecimal(this.value); render()"></label>
+      <label style="margin:0;"><span>Tasa de interés (%)</span><input id="nf_tasa"${dis} type="text" inputmode="decimal" value="${f.tasa}" oninput="window._nf.tasa=filtrarDecimal(this.value); render()"></label>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-      <label style="margin:0;"><span>Período de pago</span><select onchange="window._nf.periodo=this.value; render()">${periodoOpts}</select></label>
-      <label style="margin:0;"><span>Método de amortización</span><select onchange="window._nf.metodo=this.value; render()">${metodoOpts}</select></label>
+      <label style="margin:0;"><span>Período de pago</span><select${dis} onchange="window._nf.periodo=this.value; render()">${periodoOpts}</select></label>
+      <label style="margin:0;"><span>Método de amortización</span><select${dis} onchange="window._nf.metodo=this.value; render()">${metodoOpts}</select></label>
     </div>
-    ${esIndef ? "" : `<label><span>Cantidad de cuotas</span><input id="nf_cuotas" type="text" inputmode="numeric" value="${f.cuotas}" oninput="window._nf.cuotas=filtrarEntero(this.value); render()"></label>`}
+    ${esIndef ? "" : `<label><span>Cantidad de cuotas</span><input id="nf_cuotas"${dis} type="text" inputmode="numeric" value="${f.cuotas}" oninput="window._nf.cuotas=filtrarEntero(this.value); render()"></label>`}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;">
-      <label style="margin:0;"><span>Fecha del préstamo</span><input id="nf_fecha" type="date" value="${f.fechaInicio}" oninput="window._nf.fechaInicio=this.value; render()"></label>
-      <label style="margin:0;"><span>Fecha 1ª cuota</span><input id="nf_fecha1ra" type="date" value="${f.fechaPrimeraCuota||""}" oninput="window._nf.fechaPrimeraCuota=this.value; render()"></label>
+      <label style="margin:0;"><span>Fecha del préstamo</span><input id="nf_fecha"${dis} type="date" value="${f.fechaInicio}" oninput="window._nf.fechaInicio=this.value; render()"></label>
+      <label style="margin:0;"><span>Fecha 1ª cuota</span><input id="nf_fecha1ra"${dis} type="date" value="${f.fechaPrimeraCuota||""}" oninput="window._nf.fechaPrimeraCuota=this.value; render()"></label>
     </div>
     <p class="hint nota-ayuda" style="margin:0 0 16px;">"Fecha 1ª cuota" es opcional — déjala vacía para que se calcule sola (un período exacto después de la fecha del préstamo). Ponla solo si quieres que la primera cuota caiga en una fecha específica (por ejemplo, el día de pago fijo del cliente); las cuotas siguientes siguen cayendo cada período después de esa.</p>
     ${previewHtml}
@@ -5143,7 +5152,16 @@ function abrirEditarPrestamo(id){
 function guardarPrestamo(){
   const f = window._nf;
   const esIndef = f.metodo === METODOS[5];
-  if(!f.clienteId || !f.capital || !f.tasa || (!esIndef && !f.cuotas)) return;
+  if(f.editId){
+    // Respaldo: aunque los campos estén bloqueados, con pagos registrados se conservan los valores originales.
+    const _p = state.prestamos.find(x=>x.id===f.editId);
+    if(prestamoTienePagos(_p)){
+      Object.assign(f, { clienteId:_p.clienteId, capital:_p.capital, tasa:_p.tasa, periodo:_p.periodo, metodo:_p.metodo,
+        cuotas:_p.cuotas, fechaInicio:_p.fechaInicio, fechaPrimeraCuota:_p.fechaPrimeraCuota||"" });
+    }
+  }
+  const falta = faltantesPrestamo(f, true);
+  if(falta.length){ avisarFaltantes(falta); return; }
   const codigoDeseado = (f.codigo||"").trim();
   if(!codigoDeseado){ mostrarAlerta("Ponle un número de préstamo."); return; }
   const duplicado = state.prestamos.find(x=>x.codigo===codigoDeseado && x.id!==f.editId);
@@ -5165,6 +5183,25 @@ function guardarPrestamo(){
   save(); render();
 }
 
+// Datos obligatorios de un préstamo: devuelve la lista de lo que falta (para avisar con claridad en vez de no hacer nada).
+function faltantesPrestamo(f, incluirCliente){
+  const esIndef = f.metodo === METODOS[5];
+  const falta = [];
+  if(incluirCliente && !f.clienteId) falta.push({ txt: "Cliente", id: "nf_cliente" });
+  if(!f.capital || !(Number(f.capital) > 0)) falta.push({ txt: "Capital a financiar", id: "nf_capital" });
+  if(f.tasa === "" || f.tasa === undefined || f.tasa === null) falta.push({ txt: "Tasa de interés", id: "nf_tasa" });
+  if(!esIndef && !(Number(f.cuotas) > 0)) falta.push({ txt: "Cantidad de cuotas", id: "nf_cuotas" });
+  if(!f.fechaInicio) falta.push({ txt: "Fecha del préstamo", id: "nf_fecha" });
+  return falta;
+}
+function avisarFaltantes(falta, prefijoId){
+  const txt = falta.map(function(x){ return x.txt; });
+  const lista = txt.length > 1 ? txt.slice(0, -1).join(", ") + " y " + txt[txt.length - 1] : txt[0];
+  mostrarAlerta((txt.length === 1 ? "Falta completar: " : "Faltan por completar: ") + lista + ".", function(){
+    const el = document.getElementById(falta[0].id.replace("nf_", prefijoId || "nf_"));
+    if(el){ try{ el.scrollIntoView({ block: "center" }); el.focus(); }catch(e){} }
+  });
+}
 // --- Calculadora de préstamos --------------------------------------------------------
 // Es una simulación: nunca guarda un préstamo por sí sola. Vive en su propia variable
 // (window._calc, fuera de "state") igual que los formularios de nuevo préstamo/refinanciar,
@@ -5252,7 +5289,6 @@ function viewCalculadora(){
     }
   }
 
-  const puedeCrear = !!f.clienteId && f.capital && f.tasa && (esIndef || f.cuotas);
 
   return `
     <p class="hint nota-ayuda" style="margin:0 0 14px;">Simula un préstamo sin guardar nada todavía. Puedes elegir un cliente ya registrado, o simplemente escribir un nombre para probar números — eso no crea ningún cliente ni préstamo real.</p>
@@ -5269,12 +5305,14 @@ function viewCalculadora(){
     ${esIndef ? "" : `<label><span>Cantidad de cuotas</span><input id="calc_cuotas" type="text" inputmode="numeric" value="${f.cuotas}" oninput="window._calc.cuotas=filtrarEntero(this.value); render()"></label>`}
     <label><span>Fecha del préstamo</span><input id="calc_fecha" type="date" value="${f.fechaInicio}" oninput="window._calc.fechaInicio=this.value; render()"></label>
     ${previewHtml}
-    <button class="btn btn-gold" style="width:100%;margin-top:16px;" onclick="crearPrestamoDesdeCalculadora()" ${puedeCrear?"":"disabled style='opacity:.4'"}>Crear este préstamo</button>
-    ${!f.clienteId ? `<p class="hint" style="margin-top:8px;text-align:center;">Para crear el préstamo de verdad hace falta elegir un cliente ya registrado (el nombre temporal es solo para probar números).</p>` : ""}`;
+    <button class="btn btn-gold" style="width:100%;margin-top:16px;" onclick="crearPrestamoDesdeCalculadora()">Crear este préstamo</button>
+    ${!f.clienteId ? `<p class="hint" style="margin-top:8px;text-align:center;">Al crearlo podrás elegir el cliente de tu lista (el nombre temporal es solo para probar números).</p>` : ""}`;
 }
 function crearPrestamoDesdeCalculadora(){
   const f = window._calc;
-  if(!f.clienteId) return;
+  const falta = faltantesPrestamo(f, false);
+  if(falta.length){ avisarFaltantes(falta, "calc_"); return; }
+  if(state.clientes.length === 0){ mostrarAlerta("Primero registra un cliente en la pestaña Clientes para poder crear el préstamo."); return; }
   window._nf = {
     codigo: nextCode("P", state.prestamos),
     clienteId: f.clienteId, capital: f.capital, tasa: f.tasa, cuotas: f.cuotas,
@@ -5724,7 +5762,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "26.2";
+const JR_VERSION = "26.4";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
