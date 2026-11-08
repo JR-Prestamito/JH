@@ -7896,8 +7896,12 @@ function jrGuardiaAtras(){ try{ history.pushState({ jr: "guardia" }, ""); }catch
 try{
   if(!(history.state && history.state.jr === "guardia")){ history.replaceState({ jr: "base" }, ""); }
 }catch(e){}
+let _esperandoSalida = false;
+function jrQuitarAvisoSalir(){ const x = document.getElementById("jr-aviso-salir"); if(x) x.remove(); }
 function jrArmarGuardia(){
-  try{ if(!_salidaConfirmada && !_ignorarPop && history.state && history.state.jr === "base") jrGuardiaAtras(); }catch(e){}
+  // Si estaba esperando el segundo "atrás" y el usuario toca la pantalla, se queda: vuelve la protección.
+  if(_esperandoSalida){ _esperandoSalida = false; _saliendoAAppExterna = false; jrQuitarAvisoSalir(); }
+  try{ if(!_ignorarPop && history.state && history.state.jr === "base") jrGuardiaAtras(); }catch(e){}
 }
 ["pointerup","touchend","click","keydown"].forEach(function(ev){
   document.addEventListener(ev, jrArmarGuardia, { capture: true, passive: true });
@@ -7916,31 +7920,31 @@ function jrAtrasEnApp(){
   const bk = Array.prototype.find.call(document.querySelectorAll(".backbtn"), function(x){ return x.textContent.trim() === "‹"; });
   if(bk){ bk.click(); return; }
   if(state.tab !== "inicio"){ irA("inicio"); return; }
-  mostrarConfirmacion("¿Salir de la app?", function(ok){
-    if(!ok) return;
-    _salidaConfirmada = true; _saliendoAAppExterna = true;
-    // Una página web no puede cerrarse sola: se quita la protección y el siguiente "atrás" del teléfono sale.
-    let av = document.getElementById("jr-aviso-salir");
-    if(!av){ av = document.createElement("div"); av.id = "jr-aviso-salir"; document.body.appendChild(av); }
-    av.textContent = "Toca atrás otra vez para salir";
-    setTimeout(function(){ const x = document.getElementById("jr-aviso-salir"); if(x) x.remove(); }, 3500);
-    history.back(); setTimeout(function(){ history.back(); }, 80);
-  }, { textoAceptar: "Salir", textoCancelar: "Quedarme" });
+  return "raiz";                                                          // en Inicio: el primer atrás solo avisa
 }
 // Al tocar atrás se vuelve a la entrada "base"; para quedarse en la app se avanza de nuevo a la entrada
 // "guardia" que ya existe (no se crea una nueva: Chrome se salta las entradas creadas sin que el usuario
 // toque la pantalla, y por eso la segunda vez que se tocaba atrás la app se cerraba).
 let _ignorarPop = false;
 window.addEventListener("popstate", function(){
-  if(_salidaConfirmada) return;
   if(_ignorarPop){ _ignorarPop = false; return; }
   if(history.state && history.state.jr === "guardia") return;
+  if(_esperandoSalida) return;
+  if(jrAtrasEnApp() === "raiz"){
+    // En Inicio: no hay cuadro. El primer atrás solo muestra el aviso y deja libre el siguiente atrás (sale de la app).
+    // La protección vuelve cuando el usuario toca la pantalla.
+    _esperandoSalida = true; _saliendoAAppExterna = true;
+    let av = document.getElementById("jr-aviso-salir");
+    if(!av){ av = document.createElement("div"); av.id = "jr-aviso-salir"; document.body.appendChild(av); }
+    av.textContent = "Toca atrás otra vez para salir";
+    setTimeout(function(){ jrQuitarAvisoSalir(); }, 4000);      // el aviso se oculta solo; la espera sigue hasta que se toque la pantalla
+    return;
+  }
   _ignorarPop = true;
   history.forward();
   setTimeout(function(){
     if(_ignorarPop){ _ignorarPop = false; jrGuardiaAtras(); }      // respaldo: si no había hacia dónde avanzar
   }, 400);
-  jrAtrasEnApp();
 });
 
 // --- Banner "Actualizando…" compartido, usado tanto por el ícono de recargar como por el
