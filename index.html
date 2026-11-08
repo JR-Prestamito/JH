@@ -1106,6 +1106,8 @@
   [data-theme="dark"] select.campo-fijo{background:#1B212C;color:#F3F0E8;border-color:rgba(243,240,232,.12);-webkit-text-fill-color:#F3F0E8;}
   input.campo-bloq,select.campo-bloq{width:100%;opacity:1;background:#F3F0E8;color:#1B2A4A;font-weight:600;border:1px solid #E5E1D8;-webkit-text-fill-color:#1B2A4A;}
   [data-theme="dark"] input.campo-bloq,[data-theme="dark"] select.campo-bloq{background:#1B212C;color:#F3F0E8;border-color:rgba(243,240,232,.12);-webkit-text-fill-color:#F3F0E8;}
+  #jr-aviso-salir{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9998;background:#1B2A4A;color:#F3F0E8;font-size:13px;font-weight:600;padding:10px 16px;border-radius:99px;white-space:nowrap;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.25);}
+  [data-theme="dark"] #jr-aviso-salir{background:#F3F0E8;color:#12161F;}
 </style>
 </head>
 <body>
@@ -7895,7 +7897,7 @@ try{
   if(!(history.state && history.state.jr === "guardia")){ history.replaceState({ jr: "base" }, ""); }
 }catch(e){}
 function jrArmarGuardia(){
-  try{ if(!_ignorarPop && history.state && history.state.jr === "base") jrGuardiaAtras(); }catch(e){}
+  try{ if(!_salidaConfirmada && !_ignorarPop && history.state && history.state.jr === "base") jrGuardiaAtras(); }catch(e){}
 }
 ["pointerup","touchend","click","keydown"].forEach(function(ev){
   document.addEventListener(ev, jrArmarGuardia, { capture: true, passive: true });
@@ -7917,6 +7919,11 @@ function jrAtrasEnApp(){
   mostrarConfirmacion("¿Salir de la app?", function(ok){
     if(!ok) return;
     _salidaConfirmada = true; _saliendoAAppExterna = true;
+    // Una página web no puede cerrarse sola: se quita la protección y el siguiente "atrás" del teléfono sale.
+    let av = document.getElementById("jr-aviso-salir");
+    if(!av){ av = document.createElement("div"); av.id = "jr-aviso-salir"; document.body.appendChild(av); }
+    av.textContent = "Toca atrás otra vez para salir";
+    setTimeout(function(){ const x = document.getElementById("jr-aviso-salir"); if(x) x.remove(); }, 3500);
     history.back(); setTimeout(function(){ history.back(); }, 80);
   }, { textoAceptar: "Salir", textoCancelar: "Quedarme" });
 }
