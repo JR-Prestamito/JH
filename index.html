@@ -1104,6 +1104,8 @@
   [data-theme="dark"] .est-ag-f .m{color:#F0908A;}
   select.campo-fijo{opacity:1;background:#F3F0E8;color:#1B2A4A;font-weight:600;border:1px solid #E5E1D8;-webkit-text-fill-color:#1B2A4A;}
   [data-theme="dark"] select.campo-fijo{background:#1B212C;color:#F3F0E8;border-color:rgba(243,240,232,.12);-webkit-text-fill-color:#F3F0E8;}
+  input.campo-bloq,select.campo-bloq{width:100%;opacity:1;background:#F3F0E8;color:#1B2A4A;font-weight:600;border:1px solid #E5E1D8;-webkit-text-fill-color:#1B2A4A;}
+  [data-theme="dark"] input.campo-bloq,[data-theme="dark"] select.campo-bloq{background:#1B212C;color:#F3F0E8;border-color:rgba(243,240,232,.12);-webkit-text-fill-color:#F3F0E8;}
 </style>
 </head>
 <body>
@@ -5086,7 +5088,7 @@ function viewNuevoPrestamo(){
   const esIndef = f.metodo === METODOS[5];
   const editando = !!f.editId;
   const bloq = editando && prestamoTienePagos(state.prestamos.find(x=>x.id===f.editId));
-  const dis = bloq ? " disabled class='campo-fijo'" : "";
+  const dis = bloq ? " disabled class='campo-bloq'" : "";
 
   let opts = (f.clienteId ? "" : `<option value="">— Elige un cliente —</option>`) + state.clientes.map(c=>`<option value="${c.id}" ${c.id===f.clienteId?"selected":""}>${c.nombre}</option>`).join("");
   let metodoOpts = METODOS.map(m=>`<option ${m===f.metodo?"selected":""}>${m}</option>`).join("");
@@ -5126,6 +5128,7 @@ function viewNuevoPrestamo(){
     </div>
     <p class="hint nota-ayuda" style="margin:0 0 16px;">"Fecha 1ª cuota" es opcional — déjala vacía para que se calcule sola (un período exacto después de la fecha del préstamo). Ponla solo si quieres que la primera cuota caiga en una fecha específica (por ejemplo, el día de pago fijo del cliente); las cuotas siguientes siguen cayendo cada período después de esa.</p>
     ${previewHtml}
+    ${bloq ? `<p class="hint" style="margin:12px 0 0;">Este préstamo ya tiene pagos; para cambiar esto usa Refinanciar.</p>` : ""}
     <div class="flexrow" style="margin-top:16px;">
       <button class="btn btn-outline" onclick="window._nf=null; state.vista=${editando?"'detalle'":"'lista'"}; render()">Cancelar</button>
       <button class="btn btn-gold" onclick="guardarPrestamo()" ${state.clientes.length===0?"disabled style='opacity:.4'":""}>${editando?"Guardar cambios":"Guardar préstamo"}</button>
