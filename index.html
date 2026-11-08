@@ -5724,7 +5724,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "26.1";
+const JR_VERSION = "26.2";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
@@ -7840,6 +7840,40 @@ window.addEventListener("beforeunload", function(e){
   e.preventDefault();
   e.returnValue = "";
   return "";
+});
+
+// --- Botón/gesto "atrás" del teléfono: ya no saca de la app. Retrocede dentro de ella (igual que
+// la flecha ‹ del encabezado) y, estando en Inicio, pregunta "¿Salir de la app?".
+// Se deja una entrada de historial "guardia" para poder atrapar el botón atrás; al recargar no se duplica.
+let _salidaConfirmada = false;
+function jrGuardiaAtras(){ try{ history.pushState({ jr: "guardia" }, ""); }catch(e){} }
+try{
+  if(!(history.state && history.state.jr === "guardia")){ history.replaceState({ jr: "base" }, ""); jrGuardiaAtras(); }
+}catch(e){}
+function jrAtrasEnApp(){
+  if(document.getElementById("lic-overlay")) return;                      // pantalla de bloqueo: no hace nada
+  const sel = document.getElementById("jr-sel-bg"); if(sel){ sel.click(); return; }
+  const root = document.getElementById("jr-modal-root");
+  if(root && root.querySelector(".jr-modal-overlay")){
+    if(root.querySelectorAll("button").length > 1) jrModalCancel(); else jrModalOk();
+    return;
+  }
+  const rc = document.querySelector(".rc-over");
+  if(rc){ const b = Array.prototype.find.call(rc.querySelectorAll("button"), function(x){ return /cerrar|volver|listo/i.test(x.textContent); }); if(b) b.click(); return; }
+  // Ojo: el ícono de recargar también usa la clase "backbtn"; la flecha de volver es la que dice ‹.
+  const bk = Array.prototype.find.call(document.querySelectorAll(".backbtn"), function(x){ return x.textContent.trim() === "‹"; });
+  if(bk){ bk.click(); return; }
+  if(state.tab !== "inicio"){ irA("inicio"); return; }
+  mostrarConfirmacion("¿Salir de la app?", function(ok){
+    if(!ok) return;
+    _salidaConfirmada = true; _saliendoAAppExterna = true;
+    history.back(); setTimeout(function(){ history.back(); }, 80);
+  }, { textoAceptar: "Salir", textoCancelar: "Quedarme" });
+}
+window.addEventListener("popstate", function(){
+  if(_salidaConfirmada) return;
+  jrGuardiaAtras();
+  jrAtrasEnApp();
 });
 
 // --- Banner "Actualizando…" compartido, usado tanto por el ícono de recargar como por el
