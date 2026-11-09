@@ -2259,15 +2259,17 @@ function resumen(p, fechaRef){
     // cuota del período siguiente): cuota = total pagado, interés = prorrateado, abono = capital cerrado.
     const filasL = tabla.slice(0, nFilasL);
     const pgLiq = pagos.slice().reverse().find(pg=>pg.liquidacion);
+    let liqCubiertas = 0;
     if(pgLiq && nFilasL > completasL){
       filasL[completasL] = Object.assign({}, filasL[completasL], {
         fecha: pgLiq.fecha, saldoInicial: Number(pgLiq.capital)||0, cuota: Number(pgLiq.monto)||0,
         interes: Number(pgLiq.interes)||0, abono: Number(pgLiq.capital)||0, saldo: 0, liquidacion: true });
       // Opción elegida al liquidar: mostrar (o no) las cuotas vencidas que cubrió la liquidación. Son los períodos
       // sin pagar cuya fecha ya había pasado el día de la liquidación; se ven antes de la fila de la liquidación.
+      let m = completasL;
+      while(m < tabla.length && tabla[m].fecha < pgLiq.fecha) m++;
+      liqCubiertas = m - completasL;
       if(p.liqMostrarVencidas){
-        let m = completasL;
-        while(m < tabla.length && tabla[m].fecha < pgLiq.fecha) m++;
         if(m > completasL){
           const cubiertas = tabla.slice(completasL, m).map(function(x){ return Object.assign({}, x, { cubierta: true }); });
           const filaLiq = Object.assign({}, filasL[completasL], { n: tabla[m-1].n + 1 });
@@ -2283,7 +2285,7 @@ function resumen(p, fechaRef){
       : (_hechasL.length ? (esIndef ? _hechasL[_hechasL.length-1].interes : _hechasL[0].cuota)
       : (tabla[0] ? (esIndef ? tabla[0].interes : tabla[0].cuota) : 0));
     return { cuota: cuotaRegL, saldoPendiente:0, capitalPendiente:0, estado:"Pagado", proximaFecha:null,
-      tabla: filasL, totalCuotasOriginal: tabla.length, pagosHechos: completasL, cuotaActual:null, abonadoEnCuotaActual:0, faltaEnCuotaActual:0,
+      tabla: filasL, totalCuotasOriginal: tabla.length, pagosHechos: completasL, cuotaActual:null, abonadoEnCuotaActual:0, faltaEnCuotaActual:0, liqCubiertas,
       moraTotal, totalPagado };
   }
   if(p.refinanciado){
@@ -5605,7 +5607,7 @@ function viewDetallePrestamo(){
     }
     const tieneAjuste = filasConAjuste.has(f.n);
     return `<tr class="fila-amort${tieneAjuste?' fila-ajuste':''}">
-      <td style="padding:3px 5px;white-space:nowrap;">${f.n}${tieneAjuste?' <span title="Incluye abono a capital" style="color:#00796A;font-weight:700;">*</span>':''}</td>
+      <td style="padding:3px 5px;white-space:nowrap;">${f.liquidacion?"Liq.":f.n}${tieneAjuste?' <span title="Incluye abono a capital" style="color:#00796A;font-weight:700;">*</span>':''}</td>
       <td style="padding:3px 5px;white-space:nowrap;">${fmtDateCompacto(f.fecha)}</td>
       <td style="padding:3px 5px;text-align:right;white-space:nowrap;">${money(f.saldoInicial)}</td>
       <td style="padding:3px 5px;text-align:right;white-space:nowrap;font-weight:700;">${money(f.cuota)}</td>
@@ -5723,7 +5725,6 @@ function viewDetallePrestamo(){
       <p style="font-weight:600;margin:0 0 6px;">Liquidar anticipado</p>
       <p class="hint nota-ayuda" style="margin:0 0 10px;">Calcula el interés real, prorateado por los días que realmente pasaron, si cancelas antes de la fecha de la cuota.</p>
       <label><span>Fecha de liquidación</span><input type="date" id="fechaLiquidacion" value="${hoyISO()}"></label>
-      ${(r.tabla||[]).slice(r.pagosHechos).some(function(x){ return x.fecha < hoyISO(); }) ? `<label style="display:flex;align-items:center;gap:8px;margin:10px 0 0;cursor:pointer;"><input type="checkbox" id="liqMostrarVenc" style="width:auto;"><span style="margin:0;font-size:13.5px;">Mostrar en la tabla las cuotas vencidas que cubre esta liquidación</span></label>` : ""}
       <button class="btn btn-outline" onclick="liquidarAnticipado('${p.id}')">Calcular y liquidar</button>
       <button class="btn btn-outline" style="margin-top:8px;" onclick="document.getElementById('card-liquidar').style.display='none'">Cancelar</button>
     </div>` : ""}` : ""}
@@ -5732,6 +5733,7 @@ function viewDetallePrestamo(){
       <p style="font-size:12px;color:#6B7080;margin:0;">Capital: <b class="monto-navy">${money(p.capital)}</b></p>
     </div>
     ${esIndefDetalle ? `<p class="hint nota-ayuda" style="margin:4px 0 10px;">Este préstamo es de plazo indefinido: cada período se cobra solo interés sobre el capital, sin fecha de finalización fija. La siguiente cuota aparece sola en la tabla un día después de la fecha de la anterior, se haya pagado o no — así siempre hay una cuota pendiente esperando, sin importar cuánto tiempo lleve el cliente sin pagar.</p>` : ""}
+    ${(p.liquidadoAnticipado && r.liqCubiertas>0) ? `<label style="display:flex;align-items:center;gap:8px;margin:6px 0 10px;cursor:pointer;"><input type="checkbox" style="width:auto;" ${p.liqMostrarVencidas?"checked":""} onchange="mostrarVencidasLiquidacion('${p.id}', this.checked)"><span style="margin:0;font-size:13.5px;">Mostrar las cuotas vencidas que cubrió la liquidación</span></label>` : ""}
     ${filasConAjuste.size>0 ? `<p class="hint nota-ayuda" style="margin:4px 0 10px;"><span style="color:#00796A;font-weight:700;">*</span> Las filas resaltadas en verde tuvieron un abono a capital extra además de su cuota normal.</p>` : ""}
     <div id="tabla-imprimible" style="margin:0 -12px 16px;padding:16px 6px;">
       <h2 class="solo-imprimir">${nombreApp().toUpperCase()}</h2>
@@ -5780,7 +5782,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "26.6";
+const JR_VERSION = "26.7";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
@@ -6375,7 +6377,7 @@ function generarAmortizacionPDF(p, cli, r, mostrarTotales){
   const filas = filasBase.map((f,i)=>{
     const tieneAjuste = filasConAjustePDF.has(f.n);
     const estado = (p.metodo===METODOS[5] && Number(f.cuota)===0 && Number(f.abono)===0) ? "Sin cuota" : (i < r.pagosHechos ? "Pagada" : (f.cubierta ? "Incluida en liquidación" : (p.liquidadoAnticipado && (f.liquidacion || i===r.pagosHechos) ? "Liquidación" : (i===r.pagosHechos && r.abonadoEnCuotaActual>0 ? `Abono ${money(r.abonadoEnCuotaActual)}` : "Pendiente"))));
-    return [f.n, fmtDateCompacto(f.fecha), money(f.saldoInicial), money(f.cuota), money(f.interes), tieneAjuste?`${money(f.abono)} *`:money(f.abono), money(f.saldo), estado];
+    return [f.liquidacion ? "Liq." : f.n, fmtDateCompacto(f.fecha), money(f.saldoInicial), money(f.cuota), money(f.interes), tieneAjuste?`${money(f.abono)} *`:money(f.abono), money(f.saldo), estado];
   });
   const totalCuota = filasBase.filter(f=>!f.cubierta).reduce((s,f)=>s+(Number(f.cuota)||0),0);
   const totalInteres = filasBase.filter(f=>!f.cubierta).reduce((s,f)=>s+(Number(f.interes)||0),0);
@@ -6541,7 +6543,7 @@ function generarEstadoCuentaPDF(p, cli, r){
     body: filasEC.map((f,i)=>{
       const tieneAjuste = filasConAjusteEC.has(f.n);
       const estado = (p.metodo===METODOS[5] && Number(f.cuota)===0 && Number(f.abono)===0) ? "Sin cuota" : (i < r.pagosHechos ? "Pagada" : (f.cubierta ? "Incluida en liquidación" : (p.liquidadoAnticipado && (f.liquidacion || i===r.pagosHechos) ? "Liquidación" : (i===r.pagosHechos && r.abonadoEnCuotaActual>0 ? `Abono ${money(r.abonadoEnCuotaActual)}` : "Pendiente"))));
-      return [f.n, fmtDateCompacto(f.fecha), money(f.saldoInicial), money(f.cuota), money(f.interes), tieneAjuste?`${money(f.abono)} *`:money(f.abono), money(f.saldo), estado];
+      return [f.liquidacion ? "Liq." : f.n, fmtDateCompacto(f.fecha), money(f.saldoInicial), money(f.cuota), money(f.interes), tieneAjuste?`${money(f.abono)} *`:money(f.abono), money(f.saldo), estado];
     }),
     foot: [["Total","","",money(totalCuotaEC),money(totalInteresEC),money(totalAbonoEC),"",""]],
     styles: { fontSize: 8, cellPadding: 1 },
@@ -7493,6 +7495,12 @@ function abrirLiquidacion(){
   c.style.display = "block";
   c.scrollIntoView({ behavior:"smooth", block:"center" });
 }
+function mostrarVencidasLiquidacion(id, valor){
+  const p = state.prestamos.find(x=>x.id===id);
+  if(!p) return;
+  p.liqMostrarVencidas = !!valor;
+  save(); render();
+}
 function liquidarAnticipado(id){
   const p = state.prestamos.find(x=>x.id===id);
   const r = resumen(p);
@@ -7519,7 +7527,6 @@ function liquidarAnticipado(id){
   if(diasReales > diaPrev){ interesSeg += capSeg*tasaDiaria*(diasReales - diaPrev); tramos.push({ dias: diasReales - diaPrev, cap: capSeg }); }
   const interes = Math.round(interesSeg*100)/100;
   const total = capitalPendiente + interes;
-  const mostrarVenc = !!(document.getElementById("liqMostrarVenc") && document.getElementById("liqMostrarVenc").checked);
   const detalleTramos = abonosPeriodo.length ? "\n(" + tramos.map(function(x){ return x.dias + " día" + (x.dias===1?"":"s") + " sobre " + money(x.cap); }).join(" + ") + ")" : "";
   mostrarConfirmacion(
     `Liquidación anticipada al ${fmtDate(fechaLiq)}:\n` +
@@ -7533,7 +7540,6 @@ function liquidarAnticipado(id){
       p.pagos = p.pagos || [];
       p.pagos.push({ id:uid(), ts:new Date().toISOString(), fecha:fechaLiq, monto:total, mora:0, liquidacion:true, interes: round2(interes), capital: round2(capitalPendiente) });
       p.liquidadoAnticipado = true;
-      p.liqMostrarVencidas = mostrarVenc;
       save(); render();
     },
     { textoAceptar:"Registrar y cerrar" }
