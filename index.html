@@ -1108,6 +1108,13 @@
   [data-theme="dark"] input.campo-bloq,[data-theme="dark"] select.campo-bloq{background:#1B212C;color:#F3F0E8;border-color:rgba(243,240,232,.12);-webkit-text-fill-color:#F3F0E8;}
   #jr-aviso-salir{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9998;background:#1B2A4A;color:#F3F0E8;font-size:13px;font-weight:600;padding:10px 16px;border-radius:99px;white-space:nowrap;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.25);}
   [data-theme="dark"] #jr-aviso-salir{background:#F3F0E8;color:#12161F;}
+  [data-theme="dark"] header p{color:rgba(243,240,232,.72);}
+  /* Clasificación NIIF PYMES en modo oscuro: el texto traía colores fijos para fondo claro */
+  [data-theme="dark"] .niif-card p{color:rgba(243,240,232,.92) !important;}
+  [data-theme="dark"] .niif-card p:first-child{color:#80CBC4 !important;}
+  [data-theme="dark"] .niif-card.card-aviso p:first-child{color:#E8C171 !important;}
+  [data-theme="dark"] .niif-card b{color:#80CBC4 !important;}
+  [data-theme="dark"] .niif-card b[style*="B0392F"]{color:#F0908A !important;}
 </style>
 </head>
 <body>
@@ -2094,7 +2101,20 @@ function generarTabla(p){
 //     esa fecha en adelante, así que el interés simple acumulado y el pago único final bajan.
 // Si un préstamo no tiene ajustes (p.ajustesCapital vacío o ausente) esta función produce
 // exactamente la misma tabla que generarTabla(), así que es segura para préstamos viejos.
+// Envoltura: si el préstamo trae "interesAnexado" (interés devengado entre el último pago y un
+// refinanciamiento, que se eligió sumar a la próxima cuota), se suma a la primera cuota
+// (a la única cuota final en el Sistema Americano). Todo lo demás (saldos, vencido, pagos)
+// sigue funcionando igual porque se compara contra la cuota ya con ese monto.
 function generarTablaDinamica(p){
+  const t = generarTablaDinamicaBase(p);
+  const extra = round2(Number(p.interesAnexado)||0);
+  if(extra > 0.004 && t.length){
+    const i = (p.metodo === METODOS[4]) ? t.length - 1 : 0;
+    t[i] = Object.assign({}, t[i], { cuota: round2(t[i].cuota + extra), interes: round2((t[i].interes||0) + extra), anexo: extra });
+  }
+  return t;
+}
+function generarTablaDinamicaBase(p){
   const capitalOriginal = Number(p.capital)||0;
   const tasa = (Number(p.tasa)||0)/100;
   const dias = DIAS_PERIODO[p.periodo] || 30;
@@ -3045,7 +3065,7 @@ function exportarExcel(){
             "Fecha":pg.fecha, "Préstamo":p.codigo, "Cliente": cli?cli.nombre:"—",
             "Monto":Number(pg.monto)||0, "Mora":Number(pg.mora)||0,
             "Total":(Number(pg.monto)||0)+(Number(pg.mora)||0),
-            "Concepto": pg.liquidacion?"Liquidación anticipada":(pg.mora>0?"Cuota + mora":"Abono / cuota")
+            "Concepto": pg.liquidacion?"Liquidación anticipada":(esPagoInteresRefi(pg)?"Interés acumulado al refinanciar":(pg.mora>0?"Cuota + mora":"Abono / cuota"))
           });
         });
       });
@@ -3530,7 +3550,8 @@ function listaModificaciones(){
       eventos.push({
         fecha: p.fechaInicio, codigo: p.codigo, codigoOrigen: origen?origen.codigo:"—",
         cliente: cli?cli.nombre:"—", tipo: "sustancial",
-        capitalAntes: origen?origen.capital:null, capitalDespues: p.capital,
+        capitalAntes: origen ? Math.max(0, round2(((p.modificaciones&&p.modificaciones.length) ? (Number(p.modificaciones[0].capitalAnterior)||0) : (Number(p.capital)||0)) + (Number(p.engancheAlRefinanciar)||0) - (Number(p.adicionalAlRefinanciar)||0))) : null,
+        capitalDespues: (p.modificaciones&&p.modificaciones.length) ? (Number(p.modificaciones[0].capitalAnterior)||0) : p.capital,
         tasaAntes: origen?origen.tasa:null, tasaDespues: p.tasa,
         enganche: Number(p.engancheAlRefinanciar)||0, adicional: Number(p.adicionalAlRefinanciar)||0,
         gananciaPerdida: Number(p.gananciaPerdidaModificacionNIF)||0
@@ -3540,7 +3561,7 @@ function listaModificaciones(){
       eventos.push({
         fecha: m.fecha, codigo: p.codigo, codigoOrigen: p.codigo,
         cliente: cli?cli.nombre:"—", tipo: "no_sustancial",
-        capitalAntes: m.capitalAnterior, capitalDespues: m.capitalNuevo,
+        capitalAntes: capitalAntesModificacion(m), capitalDespues: m.capitalNuevo,
         tasaAntes: m.tasaAnterior, tasaDespues: m.tasaNueva,
         enganche: Number(m.enganche)||0, adicional: Number(m.adicional)||0,
         gananciaPerdida: Number(m.gananciaPerdida)||0
@@ -3815,6 +3836,7 @@ function listaHistorialPagos(){
           if(pg.liquidacion) concepto = "Liquidación anticipada";
           else if(pg.tipo === "abono_capital") concepto = "Abono a capital";
           else if(pg.tipo === "enganche") concepto = "Enganche al refinanciar/modificar";
+          else if(esPagoInteresRefi(pg)) concepto = "Interés acumulado al refinanciar";
           else if(pg.mora>0) concepto = "Cuota + mora";
           return { fecha: pg.fecha, concepto, monto: Number(pg.monto)||0, mora: Number(pg.mora)||0 };
         });
@@ -3832,6 +3854,7 @@ function listaHistorialPagos(){
       if(pg.liquidacion) concepto = "Liquidación anticipada";
       else if(pg.tipo === "abono_capital") concepto = "Abono a capital";
       else if(pg.tipo === "enganche") concepto = "Enganche al refinanciar/modificar";
+      else if(esPagoInteresRefi(pg)) concepto = "Interés acumulado al refinanciar";
       else if(pg.mora>0) concepto = "Cuota + mora";
       actuales.push({
         fecha: pg.fecha, codigo: p.codigo, cliente: cli?cli.nombre:"—",
@@ -5341,6 +5364,37 @@ function crearPrestamoDesdeCalculadora(){
   render();
 }
 
+// Capital que realmente tenía el préstamo justo antes de una modificación (el pendiente, no el
+// capital original: si hubo abonos a capital, el original ya no refleja lo que se debía).
+// nuevo capital = pendiente − enganche + adicional  →  pendiente = nuevo + enganche − adicional.
+function capitalAntesModificacion(m){
+  if(m.adicional != null && m.capitalNuevo != null)
+    return Math.max(0, round2((Number(m.capitalNuevo)||0) + (Number(m.enganche)||0) - (Number(m.adicional)||0)));
+  const aj = (m.ajustesPrevios || []).reduce(function(s, x){ return s + (Number(x.monto)||0); }, 0);
+  return Math.max(0, round2((Number(m.capitalAnterior)||0) - aj));
+}
+// Interés devengado desde el último pago hasta la fecha del refinanciamiento. Usa el mismo
+// criterio que "Liquidar anticipado": interés por día sobre el saldo de cada día.
+function interesAcumuladoRefinanciar(p, fechaRef){
+  const r = resumen(p);
+  const diasPeriodo = DIAS_PERIODO[p.periodo] || 30;
+  const tasaDiaria = (Number(p.tasa)||0)/100/diasPeriodo;
+  const fechaBase = (r.pagosHechos>0 && r.tabla && r.tabla[r.pagosHechos-1]) ? r.tabla[r.pagosHechos-1].fecha : p.fechaInicio;
+  const diasReales = Math.max(0, Math.round((new Date(fechaRef+"T00:00:00") - new Date(fechaBase+"T00:00:00"))/86400000));
+  const capitalPendiente = r.capitalPendiente!=null ? r.capitalPendiente : Number(p.capital)||0;
+  const _dia = function(f){ return Math.round((new Date(f+"T00:00:00") - new Date(fechaBase+"T00:00:00"))/86400000); };
+  const abonosPeriodo = (p.ajustesCapital||[]).filter(function(x){ return x.despuesDeFila > (r.pagosHechos||0) && Number(x.monto)>0; })
+    .map(function(x){ return { d: Math.min(diasReales, Math.max(0, _dia(x.fecha||fechaBase))), monto: Number(x.monto)||0 }; })
+    .sort(function(x,y){ return x.d - y.d; });
+  let capSeg = capitalPendiente + abonosPeriodo.reduce(function(s,x){ return s + x.monto; }, 0);
+  let diaPrev = 0, interesSeg = 0;
+  abonosPeriodo.forEach(function(x){
+    if(x.d > diaPrev) interesSeg += capSeg*tasaDiaria*(x.d - diaPrev);
+    capSeg -= x.monto; diaPrev = Math.max(diaPrev, x.d);
+  });
+  if(diasReales > diaPrev) interesSeg += capSeg*tasaDiaria*(diasReales - diaPrev);
+  return { dias: diasReales, interes: round2(interesSeg), fechaBase: fechaBase };
+}
 function abrirRefinanciar(id){
   const p = state.prestamos.find(x=>x.id===id);
   if(!p) return;
@@ -5362,6 +5416,10 @@ function viewRefinanciar(){
   const enganche = Number(f.enganche)||0;
   const adicional = Number(f.adicional)||0;
   const nuevoCapital = Math.max(0, capitalPendiente - enganche + adicional);
+  const acc = interesAcumuladoRefinanciar(origen, f.fechaInicio);
+  const interesAcc = acc.interes > 0.004 ? acc.interes : 0;
+  const opcionInt = f.interesOpcion || (adicional>0 ? "descontar" : "cobrar");
+  let cuota1 = null;
 
   let metodoOpts = METODOS.map(m=>`<option ${m===f.metodo?"selected":""}>${m}</option>`).join("");
   let periodoOpts = PERIODOS.map(pd=>`<option ${pd===f.periodo?"selected":""}>${pd}</option>`).join("");
@@ -5374,6 +5432,7 @@ function viewRefinanciar(){
     const tabla = generarTabla({capital:nuevoCapital, tasa:f.tasa, cuotas: esIndef?1:f.cuotas, periodo:f.periodo, metodo:f.metodo, fechaInicio:f.fechaInicio});
     const esAmericano = f.metodo === METODOS[4];
     if(tabla.length){
+      cuota1 = esAmericano ? tabla[tabla.length-1].cuota : tabla[0].cuota;
       evalNIF = evaluarModificacionNIF(origen, nuevoCapital, tabla.map(x=>x.cuota), {esIndefinidoNuevo: esIndef});
       previewHtml = `<div class="card preview-cuota" style="margin-bottom:16px;">
         <p style="font-size:13px;margin:0 0 4px;">Nuevo capital financiado: <b>${money(nuevoCapital)}</b></p>
@@ -5383,12 +5442,33 @@ function viewRefinanciar(){
           : `<p style="font-size:13px;margin:0 0 4px;">Cuota ${esIndef?"por período":"(1ª)"}: <b>${money(tabla[0].cuota)}</b></p>
              ${esIndef?"":`<p style="font-size:13px;margin:0;">Total a pagar: <b>${money(tabla.reduce((s,x)=>s+x.cuota,0))}</b></p>`}`}
       </div>`;
-      clasificacionHtml = `<div class="card ${evalNIF.esSustancial?'card-aviso':'card-exito'}" style="margin-bottom:16px;">
+      clasificacionHtml = `<div class="card niif-card ${evalNIF.esSustancial?'card-aviso':'card-exito'}" style="margin-bottom:16px;">
         <p style="font-size:12px;font-weight:700;margin:0 0 4px;color:${evalNIF.esSustancial?'#C9973E':'#00796A'};">Clasificación NIIF PYMES: ${evalNIF.esSustancial?"Modificación sustancial":"Modificación NO sustancial"}</p>
         <p style="font-size:12px;margin:0 0 4px;color:#1B2A4A;">${evalNIF.diffPct===null ? "No hay un capital neto válido contra el cual comparar; se trata como préstamo nuevo por prudencia." : `El valor presente de los pagos nuevos (descontado a la tasa original) difiere ${(evalNIF.diffPct*100).toFixed(1)}% del capital que queda como base después del enganche/monto adicional (umbral ${umbralActualVista}%). ${evalNIF.esSustancial ? "Como la diferencia llega o supera el umbral, se da de baja el préstamo anterior y este se registra como préstamo nuevo." : "Como está por debajo del umbral, se reconoce como ajuste del mismo préstamo (no se crea un préstamo nuevo)."}`}</p>
         ${(!evalNIF.esSustancial && evalNIF.diffPct!==null) ? `<p style="font-size:13px;margin:0;color:#1B2A4A;">${evalNIF.gananciaPerdida>=0?"Ganancia":"Pérdida"} por modificación a reconocer: <b style="color:${evalNIF.gananciaPerdida>=0?'#00796A':'#B0392F'}">${money(Math.abs(evalNIF.gananciaPerdida))}</b></p>` : ""}
       </div>`;
     }
+  }
+
+  let interesHtml = "";
+  if(interesAcc > 0){
+    const opts = [["descontar","Descontar del desembolso"],["cobrar","Cobrar aparte"],["anexar","Anexar a la próxima cuota"],["perdonar","Perdonar"]]
+      .map(function(o){ return '<option value="' + o[0] + '"' + (o[0]===opcionInt ? ' selected' : '') + '>' + o[1] + '</option>'; }).join("");
+    const efectivo = adicional - interesAcc;
+    const expl = opcionInt==="descontar"
+      ? (adicional > 0
+          ? (efectivo >= 0 ? `Entregas ${money(efectivo)} en efectivo (${money(adicional)} − ${money(interesAcc)}). Se registra un pago de interés de ${money(interesAcc)} en el préstamo actual.`
+                           : `El monto adicional no alcanza: el cliente paga la diferencia de ${money(-efectivo)}. Se registra un pago de interés de ${money(interesAcc)} en el préstamo actual.`)
+          : `No hay monto adicional del cual descontar: el cliente paga ${money(interesAcc)}. Se registra como pago de interés en el préstamo actual.`)
+      : opcionInt==="cobrar" ? `El cliente paga ${money(interesAcc)} aparte. Se registra como pago de interés en el préstamo actual.`
+      : opcionInt==="anexar" ? `No se cobra hoy: se suma a la primera cuota del préstamo nuevo${cuota1!==null ? ` (queda en ${money(cuota1 + interesAcc)})` : ""}.`
+      : `No se cobra: el cliente no paga esos días.`;
+    interesHtml = `<div class="card" style="margin-bottom:16px;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 4px;">Interés acumulado desde el último pago</p>
+      <p style="font-size:13px;margin:0 0 10px;">${acc.dias} día${acc.dias===1?"":"s"} (desde el ${fmtDate(acc.fechaBase)}): <b>${money(interesAcc)}</b></p>
+      <label style="margin-bottom:6px;"><span>¿Qué hacer con este interés?</span><select onchange="window._rf.interesOpcion=this.value; render()">${opts}</select></label>
+      <p class="hint" style="margin:0;">${expl}</p>
+    </div>`;
   }
 
   return `
@@ -5405,6 +5485,7 @@ function viewRefinanciar(){
     <label><span>Método de amortización</span><select onchange="window._rf.metodo=this.value; render()">${metodoOpts}</select></label>
     ${esIndef?"":`<label><span>Cantidad de cuotas</span><input id="rf_cuotas" type="text" inputmode="numeric" value="${f.cuotas}" oninput="window._rf.cuotas=filtrarEntero(this.value); render()"></label>`}
     <label><span>Fecha del nuevo préstamo</span><input id="rf_fecha" type="date" value="${f.fechaInicio}" oninput="window._rf.fechaInicio=this.value; render()"></label>
+    ${interesHtml}
     ${previewHtml}
     <div class="flexrow">
       <button class="btn btn-outline" onclick="window._rf=null; state.vista='detalle'; render()">Cancelar</button>
@@ -5423,6 +5504,9 @@ function guardarRefinanciamiento(){
   const adicional = Number(f.adicional)||0;
   const nuevoCapital = Math.max(0, capitalPendiente - enganche + adicional);
   if(nuevoCapital<=0) return;
+  const acc = interesAcumuladoRefinanciar(origen, f.fechaInicio);
+  const interesAcc = acc.interes > 0.004 ? acc.interes : 0;
+  const opcionInt = f.interesOpcion || (adicional>0 ? "descontar" : "cobrar");
 
   const tablaNueva = generarTabla({capital:nuevoCapital, tasa:f.tasa, cuotas: esIndef?1:f.cuotas, periodo:f.periodo, metodo:f.metodo, fechaInicio:f.fechaInicio});
   const evalNIF = evaluarModificacionNIF(origen, nuevoCapital, tablaNueva.map(x=>x.cuota), {esIndefinidoNuevo: esIndef});
@@ -5431,8 +5515,26 @@ function guardarRefinanciamiento(){
     ? ""
     : `\n\nClasificación NIIF PYMES: ${evalNIF.esSustancial ? "Modificación sustancial (se da de baja el préstamo anterior)" : `Modificación NO sustancial — ${evalNIF.gananciaPerdida>=0?"ganancia":"pérdida"} por modificación de ${money(Math.abs(evalNIF.gananciaPerdida))}`}`;
 
-  mostrarConfirmacion(`Vas a refinanciar ${origen.codigo}:\nCapital pendiente: ${money(capitalPendiente)}\nEnganche/abono: ${money(enganche)}\nMonto adicional entregado: ${money(adicional)}\nNuevo capital: ${money(nuevoCapital)}${notaNIF}\n\n¿Confirmas?`, function(ok){
+  const msgInteres = interesAcc > 0
+    ? `\nInterés acumulado (${acc.dias} día${acc.dias===1?"":"s"}): ${money(interesAcc)} — ` + (
+        opcionInt==="descontar" ? (adicional>=interesAcc ? `descontado del desembolso (entregas ${money(adicional-interesAcc)})` : `cobrado; el monto adicional no alcanza y el cliente paga ${money(interesAcc-adicional)}`)
+        : opcionInt==="cobrar" ? "cobrado aparte"
+        : opcionInt==="anexar" ? "se suma a la próxima cuota"
+        : "perdonado")
+    : "";
+  mostrarConfirmacion(`Vas a refinanciar ${origen.codigo}:\nCapital pendiente: ${money(capitalPendiente)}\nEnganche/abono: ${money(enganche)}\nMonto adicional entregado: ${money(adicional)}${msgInteres}\nNuevo capital: ${money(nuevoCapital)}${notaNIF}\n\n¿Confirmas?`, function(ok){
     if(!ok) return;
+
+    // Interés devengado desde el último pago: si se cobra (o se descuenta del desembolso) se
+    // registra como un pago de interés en el préstamo actual ANTES de refinanciar, para que
+    // quede en su historial y en lo cobrado. (El capital nuevo ya se calculó arriba.)
+    let idPagoInt = null;
+    if(interesAcc > 0 && (opcionInt==="cobrar" || opcionInt==="descontar")){
+      origen.pagos = origen.pagos || [];
+      idPagoInt = uid();
+      origen.pagos.push({ id:idPagoInt, ts:new Date().toISOString(), fecha:f.fechaInicio, monto:interesAcc, mora:0, tipo:"cuota",
+        formaPago: state.config.reciboFormaPago || "Efectivo", interes:interesAcc, capital:0, nota:"Interés acumulado al refinanciar", refiInteres:true });
+    }
 
     // Según NIIF PYMES: solo si la modificación es SUSTANCIAL (diferencia de valor presente
     // igual o mayor al umbral) se da de baja el préstamo anterior y se crea uno nuevo. Si es
@@ -5454,6 +5556,10 @@ function guardarRefinanciamiento(){
         tipoModificacionNIF: "sustancial",
         gananciaPerdidaModificacionNIF: 0
       };
+      if(interesAcc > 0 && opcionInt==="anexar") nuevo.interesAnexado = interesAcc;
+      // Se enlaza el pago de interés con el préstamo nuevo: si ese préstamo se elimina, el pago también se quita.
+      const _piRef = idPagoInt ? (origen.pagos||[]).find(function(x){ return x.id === idPagoInt; }) : null;
+      if(_piRef) _piRef.refiParaId = nuevo.id;
       // El enganche se registra también como un pago real (no solo como el número
       // engancheAlRefinanciar) para que aparezca en "Pagos" y se sume en "Total cobrado" sin
       // necesidad de sumarlo aparte en cada reporte. resumen() lo excluye del avance del
@@ -5480,7 +5586,9 @@ function guardarRefinanciamiento(){
         // contra la tabla nueva (si se dejara, el mismo pago quedaría acreditado dos veces:
         // una al calcular capitalPendiente y otra al recalcular la tabla — esto es justo lo
         // que causaba que un pago viejo apareciera como "abono a la primera cuota" nueva).
-        pagosPrevios: origen.pagos || [], ajustesPrevios: origen.ajustesCapital || []
+        pagosPrevios: origen.pagos || [], ajustesPrevios: origen.ajustesCapital || [],
+        interesAnexadoAnterior: origen.interesAnexado || 0,
+        pagoInteresId: idPagoInt
       });
       origen.capital = nuevoCapital;
       origen.tasa = f.tasa;
@@ -5490,6 +5598,7 @@ function guardarRefinanciamiento(){
       origen.fechaInicio = f.fechaInicio;
       origen.pagos = [];
       origen.ajustesCapital = [];
+      origen.interesAnexado = (interesAcc > 0 && opcionInt==="anexar") ? interesAcc : 0;
       // Mismo criterio que en la rama "sustancial" de arriba: el enganche se registra como
       // un pago real para que se vea en "Pagos"/"Total cobrado", y resumen() lo excluye del
       // avance del cronograma (ya está descontado en nuevoCapital) para no contarlo dos veces.
@@ -5782,7 +5891,7 @@ function cargarPDFLibs(cb){
   });
 }
 // ===== Versión de la app y aviso de "versión nueva" =====
-const JR_VERSION = "26.8";
+const JR_VERSION = "27.4";
 // La versión nueva NO se usa hasta que tocas "Actualizar": se le pide al sw.js que la active
 // y, cuando confirma, se recarga la app.
 function aplicarActualizacion(){
@@ -6036,6 +6145,12 @@ const MESES_ABR = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","
 const MESES_LARGO = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 function irEstadisticas(){ state.tab = "inicio"; state.vista = "estadisticas"; render(); window.scrollTo(0, 0); }
 function setEstRango(n){ state._estRango = n; state._estMes = null; render(); }
+// Enero a diciembre del año indicado (12 claves "AAAA-MM"), para la gráfica de 12 meses.
+function mesesDelAnioClaves(anio){
+  const out = [];
+  for(let m = 1; m <= 12; m++) out.push(anio + "-" + String(m).padStart(2, "0"));
+  return out;
+}
 function mesesAtrasClaves(n){
   const h = new Date(hoyISO() + "T00:00:00"), out = [];
   for(let i = n - 1; i >= 0; i--){
@@ -6090,17 +6205,23 @@ function composicionTodo(){
 function datosEstadisticas(rango){
   const pagos = todosLosEventosPago(), desem = listaDesembolsos();
   const nBarras = rango === 0 ? 12 : rango;
-  const claves = mesesAtrasClaves(nBarras);
+  // "12 meses" y "Todo" muestran el año calendario (enero a diciembre); 3 y 6 meses siguen
+  // siendo los últimos meses hasta hoy.
+  const anioCal = (rango === 12 || rango === 0);
+  const hoyS = hoyISO(), anioHoy = Number(hoyS.slice(0, 4));
+  const claves = anioCal ? mesesDelAnioClaves(anioHoy) : mesesAtrasClaves(nBarras);
   const cobM = {}, preM = {};
   claves.forEach(function(k){ cobM[k] = 0; preM[k] = 0; });
-  const desde = rango === 0 ? "" : claves[0] + "-01";
-  const desdeAnt = rango === 0 ? "" : mesesAtrasClaves(nBarras * 2)[0] + "-01";
+  const desde = rango === 0 ? "" : (rango === 12 ? anioHoy + "-01-01" : claves[0] + "-01");
+  const desdeAnt = rango === 0 ? "" : (rango === 12 ? (anioHoy - 1) + "-01-01" : mesesAtrasClaves(nBarras * 2)[0] + "-01");
+  // Con el año calendario se compara contra el mismo tramo del año anterior (hasta el mismo día).
+  const hastaAnt = rango === 12 ? (anioHoy - 1) + hoyS.slice(4) : "";
   let cobrado = 0, mora = 0, prestado = 0, nPagos = 0, nDesem = 0, cobradoAnt = 0;
   pagos.forEach(function(e){
     const tot = (Number(e.monto) || 0) + (Number(e.mora) || 0), k = (e.fecha || "").slice(0, 7), f = e.fecha || "";
     if(k in cobM) cobM[k] += tot;
     if(!desde || f >= desde){ cobrado += tot; mora += Number(e.mora) || 0; nPagos++; }
-    else if(desdeAnt && f >= desdeAnt) cobradoAnt += tot;
+    else if(desdeAnt && f >= desdeAnt && (!hastaAnt || f <= hastaAnt)) cobradoAnt += tot;
   });
   desem.forEach(function(e){
     const m = Number(e.monto) || 0, k = (e.fecha || "").slice(0, 7), f = e.fecha || "";
@@ -6145,7 +6266,7 @@ function datosEstadisticas(rango){
   const topTotal = top.reduce(function(s, x){ return s + x.saldo; }, 0);
   const top5 = top.slice(0, 5), top5Suma = top5.reduce(function(s, x){ return s + x.saldo; }, 0);
   const T = composicionTodo(), compM = composicionMensual(claves);
-  return { claves: claves, compM: compM, estimado: compM.__estimado === true, cobM: cobM, preM: preM, cobrado: cobrado, mora: mora, prestado: prestado, nPagos: nPagos, nDesem: nDesem,
+  return { anio: anioHoy, hoyMes: hoyS.slice(0, 7), claves: claves, compM: compM, estimado: compM.__estimado === true, cobM: cobM, preM: preM, cobrado: cobrado, mora: mora, prestado: prestado, nPagos: nPagos, nDesem: nDesem,
     cobradoAnt: cobradoAnt, capitalCalle: capitalCalle, saldoActivo: saldoActivo, saldoRiesgo: saldoRiesgo,
     activos: activos, alDia: alDia, vencidos: vencidos, cerrados: cerrados, aging: aging,
     porCobrar7: porCobrar7, nPorCobrar7: nPorCobrar7, top: top5, nClientesSaldo: top.length,
@@ -6153,7 +6274,7 @@ function datosEstadisticas(rango){
 }
 // Línea suave con área (mini gráfica del resumen principal)
 function svgTendencia(d){
-  const W = 320, H = 42, p = 4, vals = d.claves.map(function(k){ return d.cobM[k]; });
+  const W = 320, H = 42, p = 4, vals = d.claves.filter(function(k){ return k <= d.hoyMes; }).map(function(k){ return d.cobM[k]; });
   const n = vals.length, max = Math.max.apply(null, vals.concat([1]));
   const px = function(i){ return n === 1 ? W / 2 : p + (W - 2 * p) * i / (n - 1); };
   const py = function(v){ return H - p - (H - 2 * p - 4) * v / max; };
@@ -6222,16 +6343,16 @@ function svgDona(partes, centroGrande, centroChico){
     '<text x="60" y="58" text-anchor="middle" class="est-dona-n">' + centroGrande + '</text><text x="60" y="73" text-anchor="middle" class="est-dona-s">' + centroChico + '</text></svg>';
 }
 function viewEstadisticas(){
-  const rango = (state._estRango === undefined) ? 6 : state._estRango;
+  const rango = (state._estRango === undefined) ? 12 : state._estRango;
   const d = datosEstadisticas(rango);
   window._estD = d;
-  const sel = (state._estMes && state._estMes in d.cobM) ? state._estMes : d.claves[d.claves.length - 1];
-  const rotulo = rango === 0 ? "últimos 12 meses en la gráfica" : "últimos " + rango + " meses";
+  const sel = (state._estMes && state._estMes in d.cobM) ? state._estMes : (d.claves.indexOf(d.hoyMes) >= 0 ? d.hoyMes : d.claves[d.claves.length - 1]);
+  const rotulo = rango === 0 ? "todo el historial" : rango === 12 ? "año " + d.anio : "últimos " + rango + " meses";
   const chip = function(n, t){ return '<button class="est-chip' + (rango === n ? ' on' : '') + '" onclick="setEstRango(' + n + ')">' + t + '</button>'; };
   let delta = "";
   if(rango !== 0 && d.cobradoAnt > 0){
     const pct = Math.round((d.cobrado - d.cobradoAnt) / d.cobradoAnt * 100);
-    delta = '<span class="est-delta ' + (pct >= 0 ? "sube" : "baja") + '">' + (pct >= 0 ? "▲ " : "▼ ") + Math.abs(pct) + '% vs. período anterior</span>';
+    delta = '<span class="est-delta ' + (pct >= 0 ? "sube" : "baja") + '">' + (pct >= 0 ? "▲ " : "▼ ") + Math.abs(pct) + '% vs. ' + (rango === 12 ? 'mismo período de ' + (d.anio - 1) : 'período anterior') + '</span>';
   }
   const flujo = d.cobrado - d.prestado;
   const hayMora = d.claves.some(function(k){ return d.compM[k].mora > 0.005; });
@@ -6485,7 +6606,11 @@ function generarEstadoCuentaPDF(p, cli, r){
     doc.setFont("helvetica","normal"); y += 3;
     if(origenRef){
       doc.setFontSize(8.5); doc.setTextColor(90);
-      doc.text(`Este préstamo nació de un refinanciamiento del préstamo ${origenRef.codigo}, con fecha ${fmtDate(p.fechaInicio)}.`, 14, y+3);
+      // La fecha del refinanciamiento NO es p.fechaInicio: si este préstamo se modificó después
+      // (refinanciamiento no sustancial) esa fecha se sobreescribe con la más reciente.
+      const _m0e = (p.modificaciones && p.modificaciones.length) ? p.modificaciones[0] : null;
+      const fechaNacio = origenRef.fechaRefinanciado || (_m0e ? (_m0e.fechaInicioAnterior || _m0e.fecha) : null) || p.fechaInicio;
+      doc.text(`Este préstamo nació de un refinanciamiento del préstamo ${origenRef.codigo}, con fecha ${fmtDate(fechaNacio)}.`, 14, y+3);
       doc.setTextColor(20);
       y += 8;
     }
@@ -6494,7 +6619,7 @@ function generarEstadoCuentaPDF(p, cli, r){
         startY: y,
         head: [["Fecha","Capital antes","Aumento","Capital después","Tasa antes","Tasa después"]],
         body: p.modificaciones.map(m=>[
-          fmtDate(m.fecha), money(m.capitalAnterior), money(m.adicional!=null ? (Number(m.adicional)||0) : Math.max((Number(m.capitalNuevo)||0)-(Number(m.capitalAnterior)||0),0)), money(m.capitalNuevo),
+          fmtDate(m.fecha), money(capitalAntesModificacion(m)), money(m.adicional!=null ? (Number(m.adicional)||0) : Math.max((Number(m.capitalNuevo)||0)-(Number(m.capitalAnterior)||0),0)), money(m.capitalNuevo),
           `${m.tasaAnterior}%`, `${m.tasaNueva}%`
         ]),
         styles: { fontSize: 8, cellPadding: 1 },
@@ -6785,6 +6910,7 @@ function datosRecibo(c){
   if(pg.liquidacion) partes.push("LIQUIDACIÓN ANTICIPADA");
   else if(pg.tipo==="abono_capital") partes.push("ABONO A CAPITAL");
   else if(pg.tipo==="enganche") partes.push("ENGANCHE");
+  else if(esPagoInteresRefi(pg)) partes.push("INTERÉS ACUMULADO AL REFINANCIAR");
   else{
     const conTotal = !esIndef && nCuotas > 0;
     const sufN = conTotal ? `/${nCuotas}` : "";
@@ -7019,7 +7145,10 @@ function htmlAjustesRecibo(){
     <button class="btn btn-gold" style="width:100%;margin-top:14px;" onclick="cerrarAjustesRecibo()">Listo</button>
   </div></div>`;
 }
+// Pago de interés que se registra al refinanciar (días corridos desde el último pago).
+function esPagoInteresRefi(pg){ return !!pg && (pg.refiInteres === true || pg.nota === "Interés acumulado al refinanciar"); }
 function conceptoPago(pg){
+  if(esPagoInteresRefi(pg)) return "Interés acumulado al refinanciar";
   if(pg.liquidacion) return "Liquidación anticipada";
   if(pg.tipo === "abono_capital") return "Abono a capital";
   if(pg.mora>0) return "Cuota + mora por atraso";
@@ -7153,11 +7282,23 @@ function datosContrato(p, cli, r){
   const tasaMora = Number(state.config.tasaMoraDiaria)||0;
   const primeraCuota = (r.tabla && r.tabla[0]) ? r.tabla[0] : null;
   const fechaPrimerPago = primeraCuota ? primeraCuota.fecha : p.fechaInicio;
-  const montoCuota = primeraCuota ? primeraCuota.cuota : 0;
+  const montoCuota = primeraCuota ? round2(primeraCuota.cuota - (primeraCuota.anexo||0)) : 0;
   const fd = new Date(p.fechaInicio+"T00:00:00");
   const diaPrimerPago = new Date(fechaPrimerPago+"T00:00:00").getDate();
   const nCuotas = Number(p.cuotas) || (r.tabla ? r.tabla.length : 0);
+  // Datos reales del plan de pagos según el método (el texto del contrato cambia con ellos).
+  const filasC = (r.tabla||[]).filter(f=>!f.cubierta && !f.liquidacion);
+  const ultimaFila = filasC.length ? filasC[filasC.length-1] : null;
+  const UNIDADES_PERIODO = { Semanal:"semana", Quincenal:"quincena", Mensual:"mes", Semestral:"semestre", Anual:"año" };
+  const fl = iso => { const dt = new Date(iso+"T00:00:00"); return `${dt.getDate()} de ${MESES_LARGOS[dt.getMonth()].toLowerCase()} de ${dt.getFullYear()}`; };
   return {
+    metodoIdx: METODOS.indexOf(p.metodo),
+    periodoNombre: p.periodo || "Mensual",
+    unidadPeriodo: UNIDADES_PERIODO[p.periodo || "Mensual"] || "mes",
+    tasaTxt: String(Number(p.tasa)||0),
+    ultimaCuota: ultimaFila ? round2(ultimaFila.cuota - (ultimaFila.anexo||0)) : montoCuota,
+    fechaUltimoPagoLarga: fl(ultimaFila ? ultimaFila.fecha : fechaPrimerPago),
+    fechaPrimerPagoLarga: fl(fechaPrimerPago),
     cliente: cli ? cli.nombre : "—",
     fechaDesembolso: p.fechaInicio,
     fechaPrimerPago,
@@ -7192,6 +7333,65 @@ function camposContrato(d){
     ["Monto Prestado", `${moneyContrato(d.capital)} (${numeroALetras(d.capital)})`]
   ];
 }
+// Párrafo del plan de pagos: usa el período real (semanal, quincenal, mensual...) y describe
+// las cuotas según el método del préstamo, en vez de un texto único para todos.
+function parrafoPagosContrato(d){
+  const PER = d.periodo;                       // MENSUAL
+  const PERS = PER + "ES";                     // MENSUALES
+  const venc = d.periodoNombre==="Mensual"
+    ? `con vencimiento el ${d.diaPrimerPago} de cada mes`
+    : `con primer vencimiento el ${d.fechaPrimerPagoLarga} y luego cada ${d.unidadPeriodo}`;
+  const m = (v)=>({t:`${moneyContrato(v)} (${numeroALetras(Math.trunc(v))})`, b:true});
+  const n = d.nCuotas;
+  const nTxt = {t:`${numeroALetras(n)} (${n}) CUOTA${n===1?"":"S"} ${n===1?PER:PERS}`, b:true};
+  if(d.metodoIdx===5){ // Indefinido (solo interés)
+    return [
+      {t:"El préstamo no tiene plazo fijo. Se pagarán intereses "}, {t:PERS, b:true}, {t:" de "}, m(d.montoCuota),
+      {t:` (${d.tasaTxt}% ${PER.toLowerCase()} sobre el capital pendiente), ${venc}. El capital se mantiene vigente y podrá cancelarse en cualquier momento, total o parcialmente, hasta la cancelación total de la deuda.-`}
+    ];
+  }
+  if(d.metodoIdx===1){ // Alemán (cuota decreciente)
+    return [
+      {t:"El pago se realizará en "}, nTxt, {t:" decrecientes (abono fijo a capital más interés sobre el saldo), la primera de "}, m(d.montoCuota),
+      {t:" y la última de "}, m(d.ultimaCuota), {t:`, ${venc}, hasta la cancelación total de la deuda.-`}
+    ];
+  }
+  if(d.metodoIdx===3){ // Capital al final (bullet)
+    if(n<=1){
+      return [{t:"El pago se realizará en un solo pago de "}, m(d.ultimaCuota), {t:`, que incluye el capital y el interés, con vencimiento el ${d.fechaUltimoPagoLarga}.-`}];
+    }
+    return [
+      {t:"El pago se realizará en "}, nTxt, {t:": las primeras "}, {t:`${numeroALetras(n-1)} (${n-1})`, b:true},
+      {t:" de solo interés, de "}, m(d.montoCuota), {t:" cada una, y una última cuota de "}, m(d.ultimaCuota),
+      {t:`, que incluye la totalidad del capital, ${venc}, hasta la cancelación total de la deuda.-`}
+    ];
+  }
+  if(d.metodoIdx===4){ // Sistema Americano (puro)
+    return [
+      {t:"El pago se realizará en un solo pago de "}, m(d.ultimaCuota),
+      {t:`, que incluye el capital y el interés de ${numeroALetras(n)} (${n}) ${n===1?"período":"períodos"} ${n===1?PER.toLowerCase():PERS.toLowerCase()}, con vencimiento el ${d.fechaUltimoPagoLarga}.-`}
+    ];
+  }
+  // Francés (cuota fija) y Tasa plana: cuota igual en cada período
+  return [
+    {t:"El pago se realizará en "}, nTxt, {t:" de "}, m(d.montoCuota),
+    {t:` cada una, ${venc}, hasta la cancelación total de la deuda.-`}
+  ];
+}
+// Cláusula de abonos a capital y liquidación anticipada. Solo vive en el contrato: la app
+// NO bloquea abonos ni liquidaciones antes de las 2 cuotas. La condición de "dos cuotas" se
+// omite cuando no aplica (Sistema Americano, que es un solo pago, o planes de 2 cuotas o menos).
+function parrafoAbonosContrato(d){
+  const sinCondicion = d.metodoIdx===4 || (d.metodoIdx!==5 && d.nCuotas<=2);
+  const ini = sinCondicion
+    ? "El deudor podrá realizar abonos a capital o liquidar anticipadamente la deuda en cualquier momento"
+    : "Pasado el pago de dos (2) cuotas, el deudor podrá realizar abonos a capital o liquidar anticipadamente la deuda en cualquier momento";
+  return [
+    {t:ini+", pagando el capital pendiente más los intereses causados hasta la fecha del pago. El detalle de cada cuota (fecha, capital, interés y saldo) se muestra en la "},
+    {t:"tabla de amortización", b:true},
+    {t:", que forma parte de este contrato.-"}
+  ];
+}
 function parrafosContrato(d){
   return [
     [
@@ -7204,13 +7404,8 @@ function parrafosContrato(d){
       {t:`${d.anioDesembolsoTexto} (${d.anioDesembolso})`, b:true},
       {t:".-"}
     ],
-    [
-      {t:"El pago se realizará en "},
-      {t:`${numeroALetras(d.nCuotas)} (${d.nCuotas}) CUOTA${d.nCuotas===1?"":"S"} ${d.periodo}`, b:true},
-      {t:" de "},
-      {t:`${moneyContrato(d.montoCuota)} (${numeroALetras(Math.trunc(d.montoCuota))})`, b:true},
-      {t:` cada una, con vencimiento el ${d.diaPrimerPago} de cada mes, hasta la cancelación total de la deuda.-`}
-    ],
+    parrafoPagosContrato(d),
+    parrafoAbonosContrato(d),
     [
       {t:"En caso de incumplimiento en el pago de alguna cuota, se aplicará un interés del "},
       {t:`${d.tasaMora.toFixed(2)}`, b:true},
@@ -7570,8 +7765,10 @@ function deshacerUltimaModificacion(id){
     p.metodo = m.metodoAnterior;
     p.cuotas = m.cuotasAnterior;
     if(m.fechaInicioAnterior) p.fechaInicio = m.fechaInicioAnterior;
-    p.pagos = m.pagosPrevios || [];
+    // El pago de interés acumulado que se registró al refinanciar se quita: deshacer vuelve a como estaba ANTES.
+    p.pagos = (m.pagosPrevios || []).filter(function(x){ return !m.pagoInteresId || x.id !== m.pagoInteresId; });
     p.ajustesCapital = m.ajustesPrevios || [];
+    p.interesAnexado = m.interesAnexadoAnterior || 0;
     p.modificaciones.pop();
     save(); render();
     mostrarAlerta(`Listo, ${p.codigo} volvió a las condiciones que tenía antes de esa modificación.`);
@@ -7599,6 +7796,7 @@ function eliminarPrestamo(id){
     if(origen){
       origen.refinanciado = false;
       delete origen.fechaRefinanciado;
+      origen.pagos = (origen.pagos || []).filter(function(x){ return x.refiParaId !== id; });
     }
     state.prestamos = state.prestamos.filter(x=>x.id!==id);
     state.vista = "lista";
@@ -7627,6 +7825,7 @@ function viewPagos(){
   const notaPago = (pg, abonoLigado)=>{
     let nota = "";
     if(pg.tipo==="enganche") nota = "Enganche al refinanciar";
+    else if(esPagoInteresRefi(pg)) nota = "Interés acumulado al refinanciar";
     else if(pg.liquidacion) nota = "Liquidación anticipada";
     else if(pg.tipo==="abono_capital") nota = "Abono a capital";
     else if(pg.mora>0) nota = `Incluye mora ${money(pg.mora)}`;
