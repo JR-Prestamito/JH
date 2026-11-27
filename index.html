@@ -83,6 +83,18 @@
   @supports ((-webkit-background-clip:text) or (background-clip:text)){ .jr-sigla{color:transparent;-webkit-background-clip:text;background-clip:text;background-color:#1B2A4A;} }
   .input-clave-bloqueo::placeholder{color:rgba(255,255,255,.32);}
   .input-clave-bloqueo:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,151,62,.25);}
+
+  /* Casilla de clave: siempre oscura y con la clave visible (en cualquier estado, tema o relleno automático del navegador) */
+  #app input.input-clave-bloqueo, #app input.input-clave-bloqueo:focus, #app input.input-clave-bloqueo:active, #app input.input-clave-bloqueo:focus-visible{
+    background-color:#2F3D60 !important; background-image:none !important; border:1px solid #6A7897 !important;
+    color:#fff !important; -webkit-text-fill-color:#fff !important; caret-color:#fff; color-scheme:dark;
+  }
+  #app input.input-clave-bloqueo:focus, #app input.input-clave-bloqueo:focus-visible{ border-color:var(--gold) !important; box-shadow:0 0 0 3px rgba(201,151,62,.25); outline:none; }
+  #app input.input-clave-bloqueo:-webkit-autofill, #app input.input-clave-bloqueo:-webkit-autofill:hover, #app input.input-clave-bloqueo:-webkit-autofill:focus, #app input.input-clave-bloqueo:autofill{
+    -webkit-box-shadow:0 0 0 1000px #2F3D60 inset !important; box-shadow:0 0 0 1000px #2F3D60 inset !important;
+    -webkit-text-fill-color:#fff !important; caret-color:#fff; transition:background-color 9999s ease-in-out 0s;
+  }
+  #app input.input-clave-bloqueo::placeholder{ color:rgba(255,255,255,.45) !important; -webkit-text-fill-color:rgba(255,255,255,.45) !important; }
   label{display:block;margin-bottom:12px;}
   label span{display:block;font-size:13px;color:#8a8680;margin-bottom:4px;}
   .btn{border:none;border-radius:10px;padding:11px;font-size:15px;font-weight:600;cursor:pointer;width:100%;}
@@ -1269,7 +1281,7 @@ function render(){
     appEl.innerHTML = viewBloqueo();
     document.title = nombreNegocio();
     const elp = document.getElementById("f_pinIngresado");
-    if(elp) elp.focus();
+    if(elp){ elp.style.setProperty("background-color","#2F3D60","important"); elp.focus(); }
     return;
   }
   document.getElementById("app").style.padding = "";
@@ -2028,7 +2040,7 @@ function viewAjustes(){
   <div class="row-card" style="display:block;">
     ${htmlSeguridad()}
   </div>
-  <p style="text-align:center;font-size:12px;color:#8a8680;margin:18px 0 8px;">Versión 16.3</p>`;
+  <p style="text-align:center;font-size:12px;color:#8a8680;margin:18px 0 8px;">Versión 17.0</p>`;
 }
 
 function viewClientes(){
