@@ -501,6 +501,29 @@ let state = {
   pagoAbierto: (_navPrevia && _navPrevia.pagoAbierto) || null,
   reciboSel: (_navPrevia && _navPrevia.reciboSel) || null
 };
+// Re-bloqueo: si la app estuvo fuera de pantalla (teléfono bloqueado u otra app) más de 1 minuto,
+// vuelve a mostrar la pantalla de ingreso (igual que en la Pro).
+const JR_REBLOQUEO_MS = 60 * 1000;
+(function(){
+  const kOculto = LK("jr_oculto_ts");
+  function bloquearSiToca(){
+    let t = 0;
+    try{ t = Number(sessionStorage.getItem(kOculto) || 0); sessionStorage.removeItem(kOculto); }catch(e){}
+    if(!t || Date.now() - t <= JR_REBLOQUEO_MS) return false;
+    if(!state.desbloqueado) return false;
+    state.desbloqueado = false;
+    state.ajustesDesbloqueado = false;
+    try{ sessionStorage.removeItem(LK("jr_desbloqueado")); sessionStorage.removeItem(LK("jr_ajustes_desbloqueado")); }catch(e){}
+    return true;
+  }
+  bloquearSiToca();
+  document.addEventListener("visibilitychange", function(){
+    try{
+      if(document.visibilityState === "hidden"){ sessionStorage.setItem(kOculto, String(Date.now())); return; }
+      if(bloquearSiToca()){ state.vista = "lista"; try{ render(); }catch(e){} }
+    }catch(e){}
+  });
+})();
 function guardarNav(){
   try{
     sessionStorage.setItem(LK("jr_nav"), JSON.stringify({
@@ -2001,7 +2024,7 @@ function viewAjustes(){
   <div class="row-card" style="display:block;">
     ${htmlSeguridad()}
   </div>
-  <p style="text-align:center;font-size:12px;color:#8a8680;margin:18px 0 8px;">Versión 16.1</p>`;
+  <p style="text-align:center;font-size:12px;color:#8a8680;margin:18px 0 8px;">Versión 16.2</p>`;
 }
 
 function viewClientes(){
