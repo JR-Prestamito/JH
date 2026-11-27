@@ -274,6 +274,98 @@
 .seg-txt b{display:block;font-size:14.5px;font-weight:600;}
 .seg-txt small{display:block;margin-top:2px;font-size:12.5px;opacity:.68;}
 .seg-chev{font-size:20px;opacity:.5;}
+/* ===== Modo oscuro (igual que la Pro) ===== */
+[data-theme="dark"] .toprow.buscador{background:#12161F;}
+[data-theme="dark"] .fab{box-shadow:0 8px 20px rgba(0,0,0,.5);}
+[data-theme="dark"] #reporte-imprimible details[open] summary{border-bottom-color:rgba(255,255,255,.08);}
+[data-theme="dark"] body{background:#12161F;color:#D5D8DE;}
+[data-theme="dark"] #app{background:#12161F;}
+[data-theme="dark"] .section-title{color:rgba(243,240,232,.72);}
+[data-theme="dark"] .row-card{background:#1B212C;border-color:rgba(255,255,255,.08);}
+[data-theme="dark"] .row-card .sub{color:rgba(243,240,232,.72);}
+[data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea{background:#1B212C;border-color:rgba(255,255,255,.16);color:#F3F0E8;}
+[data-theme="dark"] input:focus, [data-theme="dark"] select:focus, [data-theme="dark"] textarea:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(201,151,62,.35);}
+[data-theme="dark"] input::placeholder{color:rgba(255,255,255,.35);}
+[data-theme="dark"] label span{color:rgba(243,240,232,.72);}
+[data-theme="dark"] .btn-outline{background:#1B212C;border-color:rgba(255,255,255,.18);color:#F3F0E8;}
+[data-theme="dark"] .btn-danger{background:#1B212C;border-color:rgba(176,57,47,.4);color:#F0908A;}
+[data-theme="dark"] .badge{background:transparent!important;}
+[data-theme="dark"] .b-activo{background:rgba(0,121,106,.28)!important;color:#80CBC4;}
+[data-theme="dark"] .b-pagado{background:rgba(0,121,106,.28)!important;color:#80CBC4;}
+[data-theme="dark"] .b-vencido{background:rgba(176,57,47,.28)!important;color:#F0908A;}
+[data-theme="dark"] .b-refinanciado{background:rgba(143,178,232,.18)!important;color:#8FB2E8;}
+[data-theme="dark"] .tabbar{background:#1B212C;border-color:rgba(255,255,255,.08);}
+[data-theme="dark"] .tab-btn.active{color:#F3F0E8;}
+[data-theme="dark"] table{color:#F3F0E8;}
+[data-theme="dark"] th{background:#1B212C;}
+[data-theme="dark"] td{border-color:rgba(255,255,255,.08);}
+[data-theme="dark"] .empty{color:rgba(243,240,232,.72);}
+[data-theme="dark"] .hint{color:rgba(243,240,232,.72);}
+[data-theme="dark"] .avatar{background:rgba(255,255,255,.08);color:#F3F0E8;}
+[data-theme="dark"] .card .lbl{color:rgba(243,240,232,.72);}
+[data-theme="dark"] #recibo-imprimible, [data-theme="dark"] #reporte-imprimible, [data-theme="dark"] #tabla-imprimible{background:#1B212C;color:#F3F0E8;border-color:rgba(255,255,255,.08);}
+[data-theme="dark"] #recibo-imprimible h2, [data-theme="dark"] #reporte-imprimible h2, [data-theme="dark"] #tabla-imprimible h2{color:#F3F0E8;}
+[data-theme="dark"] .panel-prox{background:linear-gradient(180deg,#1B212C,#12161F);}
+[data-theme="dark"] .panel-prox .empty{color:#F3F0E8;}
+[data-theme="dark"] .fila-inicio{background:linear-gradient(90deg,#C9973E,#1B212C 60%);}
+[data-theme="dark"] .section-title.dorado{color:#F3F0E8;}
+[data-theme="dark"] .tab-btn, [data-theme="dark"] .tab-btn.active{color:var(--gold);}
+[data-theme="dark"] .printbtn{color:var(--gold);}
+[data-theme="dark"] input[type="date"], [data-theme="dark"] input[type="month"], [data-theme="dark"] input[type="time"]{color-scheme:dark;}
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator, [data-theme="dark"] input[type="month"]::-webkit-calendar-picker-indicator, [data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(63%) sepia(70%) saturate(420%) hue-rotate(3deg) brightness(95%);opacity:1;cursor:pointer;}
+@media screen{[data-theme="dark"] [style*="3b6d11" i], [data-theme="dark"] [style*="00796a" i]{color:#80CBC4 !important;}[data-theme="dark"] [style*="c0433b" i], [data-theme="dark"] [style*="b0392f" i], [data-theme="dark"] [style*="a32d2d" i]{color:#F0908A !important;}[data-theme="dark"] [style*="8a6416" i]{color:#C9973E !important;}[data-theme="dark"] .b-activo{color:#80CBC4;}[data-theme="dark"] body, [data-theme="dark"] table, [data-theme="dark"] textarea, [data-theme="dark"] .btn-outline{color:#F3F0E8;}[data-theme="dark"] input, [data-theme="dark"] select{color:#F3F0E8;}[data-theme="dark"] .avatar, [data-theme="dark"] .tab-btn.active, [data-theme="dark"] .name{color:#F3F0E8;}[data-theme="dark"] header h1, [data-theme="dark"] header .backbtn, [data-theme="dark"] .v3-val, [data-theme="dark"] .v3-mini .m-val, [data-theme="dark"] .v3-tile, [data-theme="dark"] .btn-navy, [data-theme="dark"] .iconbtn, [data-theme="dark"] .fab{color:#F3F0E8;}html:not([data-theme="dark"]) .row-card, html:not([data-theme="dark"]) input, html:not([data-theme="dark"]) select, html:not([data-theme="dark"]) textarea, html:not([data-theme="dark"]) .btn-outline, html:not([data-theme="dark"]) .btn-danger, html:not([data-theme="dark"]) .searchbar{background:#FBF9F4;}html:not([data-theme="dark"]) header h1, html:not([data-theme="dark"]) header .backbtn, html:not([data-theme="dark"]) .v3-val, html:not([data-theme="dark"]) .v3-mini .m-val, html:not([data-theme="dark"]) .v3-tile, html:not([data-theme="dark"]) .btn-navy, html:not([data-theme="dark"]) .btn-gold, html:not([data-theme="dark"]) .iconbtn, html:not([data-theme="dark"]) .fab{color:#F3F0E8;}}
+[data-theme="dark"] .fila-inicio{background:#1B212C;border-left:4px solid #C9973E;}
+html:not([data-theme="dark"]) .fila-inicio{background:#FBF9F4;}
+[data-theme="dark"] .rc{background:#1B212C;color:#F3F0E8;border-color:#C9973E;box-shadow:0 2px 10px rgba(0,0,0,.45);}
+html[data-theme="dark"]{color-scheme:dark;}
+html:not([data-theme="dark"]) .fila-inicio{background:#FBF9F4 !important;}
+[data-theme="dark"] .fila-inicio{background:#1B212C !important;border-left:2px solid #C9973E !important;}
+[data-theme="dark"] #jr-aviso-version .jr-av-card{background:#1B212C;color:#F3F0E8;}
+[data-theme="dark"] #jr-aviso-version .jr-av-sub, [data-theme="dark"] #jr-aviso-version .jr-av-x{color:rgba(243,240,232,.72);}
+[data-theme="dark"] .est{--e-mut:rgba(243,240,232,.72);--e-bd:rgba(243,240,232,.1);--e-card:#1B212C;--e-track:rgba(243,240,232,.1);}
+[data-theme="dark"] .ini{--i-card:#1B212C;--i-bd:rgba(255,255,255,.09);--i-tx:#F3F0E8;--i-mut:rgba(243,240,232,.72);--i-verde:#80CBC4;}
+[data-inicio="marino"][data-theme="dark"] .ini{--i-verde:#C9973E;}
+[data-theme="dark"] .ini{--i-mut:rgba(243,240,232,.72);}
+[data-theme="dark"] .b-vencido, [data-theme="dark"] .b-activo, [data-theme="dark"] .b-pagado{box-shadow:none;}
+[data-theme="dark"] .b-activo, [data-theme="dark"] .b-pagado, [data-theme="dark"] .b-vencido, [data-theme="dark"] .b-refinanciado{background:transparent !important;box-shadow:inset 0 0 0 1px currentColor !important;}
+[data-inicio="verde"][data-theme="dark"]{--gold:#80CBC4;}
+[data-inicio="verde"][data-theme="dark"] .fila-inicio{border-left-color:#80CBC4 !important;}
+[data-inicio="verde"][data-theme="dark"] .row-card.fila-inicio, [data-inicio="verde"][data-theme="dark"] .fila-inicio{border-left-color:#80CBC4 !important;}
+[data-theme="dark"] .b-activo, [data-theme="dark"] .b-pagado, [data-theme="dark"] .b-vencido, [data-theme="dark"] .b-refinanciado{background:transparent !important;box-shadow:none !important;}
+[data-theme="dark"] .panel-prox{background:linear-gradient(180deg,rgba(143,178,232,.13),rgba(143,178,232,.05)),#12161F;}
+[data-inicio="verde"][data-theme="dark"] .panel-prox{background:linear-gradient(180deg,rgba(128,203,196,.12),rgba(128,203,196,.05)),#12161F;}
+[data-theme="dark"] .tabbar{background:#1B2A4A !important;}
+[data-theme="dark"] .btn-outline[onclick*="volverDeReporte"], [data-theme="dark"] .btn-outline[onclick*="state._cola=null"], [data-theme="dark"] .btn-outline[style*="margin-top:16px"][style*="width:100%"], [data-inicio="verde"][data-theme="dark"] .btn-outline[onclick*="volverDeReporte"], [data-inicio="verde"][data-theme="dark"] .btn-outline[onclick*="state._cola=null"], [data-inicio="verde"][data-theme="dark"] .btn-outline[style*="margin-top:16px"][style*="width:100%"]{background:#1B212C;color:#F3F0E8;border:1px solid #6B7080;box-shadow:none;}
+[data-theme="dark"] .tab-btn, [data-inicio="verde"][data-theme="dark"] .tab-btn{color:rgba(243,240,232,.62);}
+[data-theme="dark"] .tab-btn.active{color:#C9973E;}
+[data-inicio="verde"][data-theme="dark"] .tab-btn.active{color:#80CBC4;}
+[data-theme="dark"] [style*="color:#6B7080" i]{color:rgba(243,240,232,.72) !important;}
+[data-inicio="verde"][data-theme="dark"] .card[style*="1B2A4A"]{background:#00574C !important;}
+[data-theme="dark"] .badge.b-activo, [data-theme="dark"] .badge.b-pagado{background:rgba(0,121,106,.32) !important;color:#80CBC4;}
+[data-theme="dark"] .badge.b-vencido{background:rgba(176,57,47,.32) !important;color:#F0908A;}
+[data-theme="dark"] .badge.b-refinanciado{background:rgba(143,178,232,.18) !important;color:#8FB2E8;}
+[data-theme="dark"] .badge.b-pagado{background:rgba(201,151,62,.26) !important;color:#C9973E;}
+[data-theme="dark"] header p{color:rgba(243,240,232,.72);}
+/* Ajustes propios de la beta: colores escritos directamente en el HTML */
+[data-theme="dark"] [style*="color:#1b2a4a" i], [data-theme="dark"] [style*="color: #1b2a4a" i], [data-theme="dark"] [style*="color:#2255a0" i]{color:#8FB2E8 !important;}
+[data-theme="dark"] [style*="color:#0f6e56" i]{color:#80CBC4 !important;}
+[data-theme="dark"] [style*="color:#8a8680" i]{color:rgba(243,240,232,.72) !important;}
+[data-theme="dark"] [style*="color:#333" i]{color:#F3F0E8 !important;}
+[data-theme="dark"] [style*="background:#f7f5f0" i], [data-theme="dark"] [style*="background:#eef1f6" i], [data-theme="dark"] [style*="background:#eaf0fb" i], [data-theme="dark"] [style*="background:#eaf3de" i]{background:#1B212C !important;}
+[data-theme="dark"] [style*="#e5e1d8" i]{border-color:rgba(255,255,255,.1) !important;}
+
+[data-theme="dark"] .tabla-amort th, [data-theme="dark"] .tabla-amort tfoot td{background:#1B212C !important;color:#F3F0E8 !important;}
+[data-theme="dark"] .tabla-amort th, [data-theme="dark"] .tabla-amort td{border-color:rgba(255,255,255,.1) !important;}
+[data-theme="dark"] .tabla-amort-scroll{border-color:rgba(255,255,255,.1) !important;}
+[data-theme="dark"] #recibo-imprimible .rtotal{color:#F3F0E8 !important;}
+[data-theme="dark"] #recibo-imprimible .rline{border-bottom-color:rgba(255,255,255,.18) !important;}
+[data-theme="dark"] details.row-card[open] summary{background:rgba(255,255,255,.05) !important;border-bottom-color:rgba(255,255,255,.1) !important;}
+[data-theme="dark"] details.row-card .mini-stats{border-bottom-color:rgba(255,255,255,.18) !important;}
+[data-theme="dark"] .row-card .name, [data-theme="dark"] .row-card .sub{color:#F3F0E8 !important;}
+[data-theme="dark"] .row-card .sub{color:rgba(243,240,232,.72) !important;}
+[data-theme="dark"] .avatar{background:#26324A !important;color:#F3F0E8 !important;}
+[data-theme="dark"] .section-title.dorado{color:var(--gold) !important;}
+[data-theme="dark"] .panel-prox .empty{color:#F3F0E8 !important;}
 </style>
 </head>
 <body>
@@ -1125,7 +1217,24 @@ const ICONS = {
   settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
 };
 
+// Tema: "claro", "oscuro" o "auto" (sigue el modo claro/oscuro del teléfono).
+function sincronizarTemaAuto(){
+  if(!state.config.temaModo){ state.config.temaModo = "auto"; }
+  if(state.config.temaModo === "auto"){
+    try{ state.config.temaOscuro = !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches); }catch(e){}
+  }
+}
+try{
+  const _mqTema = window.matchMedia("(prefers-color-scheme: dark)");
+  const _onTema = function(){ if(state.config.temaModo === "auto"){ sincronizarTemaAuto(); try{ render(); }catch(e){} } };
+  if(_mqTema.addEventListener) _mqTema.addEventListener("change", _onTema); else if(_mqTema.addListener) _mqTema.addListener(_onTema);
+}catch(e){}
+// Se aplica antes del primer render para que no haya parpadeo de tema claro al abrir en oscuro.
+sincronizarTemaAuto();
+document.documentElement.setAttribute("data-theme", state.config.temaOscuro ? "dark" : "light");
 function render(){
+  sincronizarTemaAuto();
+  document.documentElement.setAttribute("data-theme", state.config.temaOscuro ? "dark" : "light");
   if(!state.desbloqueado){
     const appEl = document.getElementById("app");
     appEl.style.padding = "0";
@@ -1324,7 +1433,7 @@ function abrirReportePDF(){
   state.vista = "reportePDF";
   render();
 }
-function viewReportePDF(){
+function datosReporteGeneral(){
   let prestado=0, cobrado=0;
   state.prestamos.forEach(p=>{
     prestado += capitalDesembolsadoNeto(p);
@@ -1335,39 +1444,51 @@ function viewReportePDF(){
     const cli = state.clientes.find(c=>c.id===p.clienteId);
     const r = resumen(p);
     const atraso = r.proximaFecha ? diasAtraso(r.proximaFecha) : 0;
-    const estado = atraso>0 ? "Vencido" : r.estado;
-    return `<tr>
-      <td style="padding:6px;border-top:1px solid #e5e1d8;">${p.codigo}</td>
-      <td style="padding:6px;border-top:1px solid #e5e1d8;">${cli?cli.nombre:"—"}</td>
-      <td style="padding:6px;border-top:1px solid #e5e1d8;">${money(p.capital)}</td>
-      <td style="padding:6px;border-top:1px solid #e5e1d8;">${estado}</td>
-      <td style="padding:6px;border-top:1px solid #e5e1d8;text-align:right;">${money(r.saldoPendiente)}</td>
-      <td style="padding:6px;border-top:1px solid #e5e1d8;">${r.proximaFecha?fmtDate(r.proximaFecha):"—"}</td>
-    </tr>`;
-  }).join("");
+    return { codigo:p.codigo, cliente:(cli?cli.nombre:"—"), capital:money(p.capital), estado:(atraso>0 ? "Vencido" : r.estado),
+             saldo:money(r.saldoPendiente), prox:(r.proximaFecha ? fmtDateCorta(r.proximaFecha) : "—") };
+  });
+  return { prestado:prestado, cobrado:cobrado, filas:filas };
+}
+function botonesReporte(tipo){
+  return `<div class="flexrow" style="margin-top:16px;">
+      <button class="btn btn-outline" onclick="state.vista='ajustes'; render();">Volver</button>
+      <button class="btn btn-outline" onclick="imprimirReporte('${tipo}')">Imprimir</button>
+      <button class="btn btn-gold" onclick="compartirReporte('${tipo}')">Enviar</button>
+    </div>`;
+}
+function viewReportePDF(){
+  const D = datosReporteGeneral();
+  const td = "padding:4px 5px;white-space:nowrap;";
+  const filas = D.filas.map(f=>`<tr>
+      <td style="${td}border-top:1px solid #e5e1d8;">${f.codigo}</td>
+      <td style="${td}border-top:1px solid #e5e1d8;">${f.cliente}</td>
+      <td style="${td}border-top:1px solid #e5e1d8;">${f.capital}</td>
+      <td style="${td}border-top:1px solid #e5e1d8;">${f.estado}</td>
+      <td style="${td}border-top:1px solid #e5e1d8;text-align:right;">${f.saldo}</td>
+      <td style="${td}border-top:1px solid #e5e1d8;">${f.prox}</td>
+    </tr>`).join("");
   return `
-    <div id="reporte-imprimible">
+    <div id="reporte-imprimible" style="margin:0 -4px;padding:16px 12px;">
       <h2>${nombreNegocio()}</h2>
       <p class="hint" style="margin:0 0 14px;">Reporte general · ${fmtDate(hoyISO())}</p>
       <div class="grid2" style="margin-bottom:16px;">
-        <div><p class="hint" style="margin:0;">Capital prestado</p><p style="font-weight:700;margin:2px 0;">${money(prestado)}</p></div>
-        <div><p class="hint" style="margin:0;">Total cobrado</p><p style="font-weight:700;margin:2px 0;">${money(cobrado)}</p></div>
+        <div><p class="hint" style="margin:0;">Capital prestado</p><p style="font-weight:700;margin:2px 0;">${money(D.prestado)}</p></div>
+        <div><p class="hint" style="margin:0;">Total cobrado</p><p style="font-weight:700;margin:2px 0;">${money(D.cobrado)}</p></div>
         <div><p class="hint" style="margin:0;">Clientes</p><p style="font-weight:700;margin:2px 0;">${state.clientes.length}</p></div>
         <div><p class="hint" style="margin:0;">Préstamos</p><p style="font-weight:700;margin:2px 0;">${state.prestamos.length}</p></div>
       </div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <div style="overflow:auto;max-height:300px;-webkit-overflow-scrolling:touch;">
+      <table style="width:auto;min-width:100%;border-collapse:collapse;font-size:11px;">
         <thead><tr style="background:#f7f5f0;">
-          <th style="text-align:left;padding:6px;">Código</th><th style="text-align:left;padding:6px;">Cliente</th>
-          <th style="text-align:left;padding:6px;">Capital</th><th style="text-align:left;padding:6px;">Estado</th>
-          <th style="text-align:right;padding:6px;">Saldo</th><th style="text-align:left;padding:6px;">Próx. fecha</th>
+          <th style="${td}text-align:left;">Código</th><th style="${td}text-align:left;">Cliente</th>
+          <th style="${td}text-align:left;">Capital</th><th style="${td}text-align:left;">Estado</th>
+          <th style="${td}text-align:right;">Saldo</th><th style="${td}text-align:left;">Próx. fecha</th>
         </tr></thead>
         <tbody>${filas || `<tr><td colspan="6" style="padding:14px;text-align:center;color:#8a8680;">Sin préstamos registrados.</td></tr>`}</tbody>
       </table>
+      </div>
     </div>
-    <div class="flexrow" style="margin-top:16px;">
-      <button class="btn btn-outline" onclick="state.vista='ajustes'; render();">Volver</button>
-      <button class="btn btn-gold" onclick="window.print()">Generar PDF (imprimir)</button>
-    </div>`;
+    ${botonesReporte("general")}`;
 }
 function desglosePagado(p){
   // Reparte lo realmente cobrado en un préstamo entre interés y capital,
@@ -1470,7 +1591,7 @@ function desgloseIngresosCobrados(){
   t.capitalCuotas = t.capital - t.abonos;
   return t;
 }
-function viewEstadoResultados(){
+function datosEstadoResultados(){
   let desembolsos=0, gananciaPerdidaModificaciones=0;
   state.prestamos.forEach(p=>{
     desembolsos += capitalDesembolsadoNeto(p);
@@ -1483,6 +1604,10 @@ function viewEstadoResultados(){
   const ingresos = T.intereses + T.capital + T.mora + T.enganches;
   const mostrarGananciaModif = state.config.mostrarGananciaModificaciones===true;
   const utilidad = ingresos - desembolsos + (mostrarGananciaModif ? gananciaPerdidaModificaciones : 0);
+  return { T:T, ingresos:ingresos, desembolsos:desembolsos, gananciaPerdidaModificaciones:gananciaPerdidaModificaciones, mostrarGananciaModif:mostrarGananciaModif, utilidad:utilidad };
+}
+function viewEstadoResultados(){
+  const { T, ingresos, desembolsos, gananciaPerdidaModificaciones, mostrarGananciaModif, utilidad } = datosEstadoResultados();
   const fila = (label, valor, negrita)=>`<tr>
       <td style="padding:6px 6px;${negrita?"font-weight:700;":""}">${label}</td>
       <td style="padding:6px 6px;text-align:right;${negrita?"font-weight:700;":""}">${money(valor)}</td>
@@ -1521,10 +1646,7 @@ function viewEstadoResultados(){
       </table>
       <p class="hint" style="margin-top:14px;">Nota: es un estado en base efectivo (dinero que entra vs. dinero que sale), no un estado contable formal. Cuando un préstamo se refinancia, el saldo que se traslada del préstamo anterior NO se cuenta otra vez como desembolso — solo cuenta el monto adicional que realmente se entregó en efectivo en ese momento (si lo hubo). Cuando un refinanciamiento se clasifica como "modificación no sustancial" según NIIF para las PYMES, Sección 11 (prueba del umbral de valor presente), la diferencia se reconoce aquí como ganancia o pérdida; cuando es "sustancial", se trata como préstamo nuevo sin efecto adicional en este renglón.${T.hayEstimado ? " Los cobros hechos antes de modificar un préstamo, cuando se registraron antes de que la app guardara el reparto, se dividen entre interés y capital por estimación (los abonos a capital, la mora y el total son exactos)." : ""}</p>
     </div>
-    <div class="flexrow" style="margin-top:16px;">
-      <button class="btn btn-outline" onclick="state.vista='ajustes'; render();">Volver</button>
-      <button class="btn btn-gold" onclick="window.print()">Generar PDF (imprimir)</button>
-    </div>`;
+    ${botonesReporte("resultados")}`;
 }
 
 function abrirReporteModificaciones(){
@@ -1605,10 +1727,7 @@ function viewReporteModificaciones(){
       </table>`}
       <p class="hint" style="margin-top:14px;">Reúne todos los refinanciamientos y modificaciones de condiciones registrados, con su clasificación según NIIF para las PYMES, Sección 11 (sustancial o no sustancial) y la ganancia o pérdida reconocida en cada uno. Es el detalle/respaldo de la línea "Ganancia/(pérdida) por modificación de préstamos" del Estado de resultados.</p>
     </div>
-    <div class="flexrow" style="margin-top:16px;">
-      <button class="btn btn-outline" onclick="state.vista='ajustes'; render();">Volver</button>
-      <button class="btn btn-gold" onclick="window.print()">Generar PDF (imprimir)</button>
-    </div>`;
+    ${botonesReporte("modificaciones")}`;
 }
 
 function verOcultarClaveSync(){
@@ -1868,10 +1987,21 @@ function viewAjustes(){
     </label>
     <p class="hint" style="margin:6px 0 0;">Viene desactivado por defecto. Si está desmarcado, esa línea no aparece en el Estado de resultados y no se suma a la utilidad. El reporte "Modificaciones (NIIF PYMES)" sigue disponible.</p>
   </div>
+  <div class="row-card" style="display:block;" id="sec-apariencia">
+    <p style="font-weight:600;margin:0 0 4px;">Apariencia</p>
+    <label style="margin-bottom:0;"><span>Modo</span>
+      <select id="f_temaModo" onchange="state.config.temaModo=this.value; if(this.value==='auto'){ sincronizarTemaAuto(); } else { state.config.temaOscuro=(this.value==='oscuro'); } document.documentElement.setAttribute('data-theme', state.config.temaOscuro?'dark':'light'); save(); render();">
+        <option value="claro" ${(state.config.temaModo==="auto"||state.config.temaOscuro)?"":"selected"}>Claro</option>
+        <option value="oscuro" ${(state.config.temaModo!=="auto"&&state.config.temaOscuro)?"selected":""}>Oscuro</option>
+        <option value="auto" ${state.config.temaModo==="auto"?"selected":""}>Automático (según el teléfono)</option>
+      </select>
+    </label>
+    <p class="hint" style="margin:6px 0 0;">Los recibos y reportes que imprimes o envías siempre salen en claro, pensados para papel.</p>
+  </div>
   <div class="row-card" style="display:block;">
     ${htmlSeguridad()}
   </div>
-  <p style="text-align:center;font-size:12px;color:#8a8680;margin:18px 0 8px;">Versión 15.0</p>`;
+  <p style="text-align:center;font-size:12px;color:#8a8680;margin:18px 0 8px;">Versión 16.1</p>`;
 }
 
 function viewClientes(){
@@ -2826,9 +2956,172 @@ function filasLiquidacion(p, r){
   return pagadas.concat(incluidas, [{ n:"Liq.", fecha:liq.fecha, interes:Number(liq.interes)||0, abono:Number(liq.capital)||0,
     cuota:round2((Number(liq.monto)||0)+(Number(liq.mora)||0)), mora:Number(liq.mora)||0, saldo:0, esLiquidacion:true }]);
 }
+// ===== Reportes en PDF vertical (A4), iguales en pantalla-imprimir-enviar =====================
+// Pequeño dibujador de tablas: columnas de ancho fijo que suman el ancho útil de la hoja (182 mm),
+// texto que se parte en varias líneas si no cabe, encabezado que se repite en cada página.
+function jrPDFNuevo(titulo, lineas){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:"mm", format:"a4"});
+  let y = 16;
+  doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(27,42,74);
+  doc.text(nombreNegocio(), 14, y); y += 6.5;
+  doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(90,90,90);
+  doc.text(titulo, 14, y); y += 5;
+  doc.setFontSize(9);
+  (lineas||[]).forEach(function(t){
+    doc.splitTextToSize(String(t), 182).forEach(function(l){ doc.text(l, 14, y); y += 4.4; });
+  });
+  doc.setTextColor(40,40,40);
+  return { doc:doc, y:y+2 };
+}
+function jrPDFTabla(doc, y, cols, filas, opts){
+  opts = opts || {};
+  const mX = 14, pageH = doc.internal.pageSize.getHeight();
+  const total = cols.reduce(function(s,c){ return s+c.w; }, 0);
+  const LH = 3.9, FS = opts.fontSize || 8.5;
+  function encabezado(){
+    doc.setFillColor(27,42,74); doc.rect(mX, y, total, 6.5, "F");
+    doc.setFont("helvetica","bold"); doc.setFontSize(FS); doc.setTextColor(255,255,255);
+    let x = mX;
+    cols.forEach(function(c){
+      doc.text(c.label, c.align==="right" ? x+c.w-2 : x+2, y+4.4, {align: c.align==="right" ? "right" : "left"});
+      x += c.w;
+    });
+    y += 6.5;
+    doc.setFont("helvetica","normal"); doc.setFontSize(FS); doc.setTextColor(40,40,40);
+  }
+  encabezado();
+  filas.forEach(function(fila){
+    const celdas = fila.map(function(v){ return (v && typeof v==="object") ? v : {t:String(v==null?"":v)}; });
+    const lineas = celdas.map(function(c,i){ return doc.splitTextToSize(c.t, cols[i].w-3); });
+    const alto = Math.max.apply(null, lineas.map(function(l){ return l.length; }))*LH + 2.4;
+    if(y + alto > pageH - 16){ doc.addPage(); y = 16; encabezado(); }
+    let x = mX;
+    celdas.forEach(function(c,i){
+      doc.setFont("helvetica", c.bold ? "bold" : "normal");
+      const col = c.color || [40,40,40]; doc.setTextColor(col[0],col[1],col[2]);
+      lineas[i].forEach(function(l,k){
+        doc.text(l, cols[i].align==="right" ? x+cols[i].w-2 : x+2, y+3.3+k*LH, {align: cols[i].align==="right" ? "right" : "left"});
+      });
+      x += cols[i].w;
+    });
+    y += alto;
+    doc.setDrawColor(228,228,228); doc.line(mX, y, mX+total, y);
+  });
+  doc.setFont("helvetica","normal"); doc.setTextColor(40,40,40);
+  return y;
+}
+function jrPDFPies(doc){
+  const n = doc.internal.getNumberOfPages(), w = doc.internal.pageSize.getWidth(), h = doc.internal.pageSize.getHeight();
+  for(let i=1;i<=n;i++){
+    doc.setPage(i); doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(140,140,140);
+    doc.text("Página "+i+" de "+n, w/2, h-8, {align:"center"});
+  }
+  doc.setTextColor(40,40,40);
+  return doc;
+}
+function jrPDFParrafo(doc, y, texto, size){
+  doc.setFont("helvetica","normal"); doc.setFontSize(size||8); doc.setTextColor(110,110,110);
+  doc.splitTextToSize(String(texto), 182).forEach(function(l){
+    if(y > doc.internal.pageSize.getHeight()-16){ doc.addPage(); y = 16; }
+    doc.text(l, 14, y); y += 4;
+  });
+  doc.setTextColor(40,40,40);
+  return y;
+}
+function pdfReporteGeneral(){
+  const D = datosReporteGeneral();
+  const t = jrPDFNuevo("Reporte general  ·  " + fmtDate(hoyISO()),
+    ["Capital prestado " + money(D.prestado) + "   ·   Total cobrado " + money(D.cobrado) + "   ·   Clientes " + state.clientes.length + "   ·   Préstamos " + state.prestamos.length]);
+  const cols = [{label:"Código",w:20},{label:"Cliente",w:50},{label:"Capital",w:28},{label:"Estado",w:26},{label:"Saldo",w:30,align:"right"},{label:"Próx. fecha",w:28}];
+  const filas = D.filas.length ? D.filas.map(function(f){ return [f.codigo, f.cliente, f.capital, f.estado, f.saldo, f.prox]; }) : [["—","Sin préstamos registrados.","","","",""]];
+  jrPDFTabla(t.doc, t.y, cols, filas);
+  return jrPDFPies(t.doc);
+}
+function pdfReporteResultados(){
+  const dat = datosEstadoResultados();
+  const t = jrPDFNuevo("Estado de resultados (base efectivo)  ·  " + fmtDate(hoyISO()), []);
+  const doc = t.doc; let y = t.y + 2;
+  const L = 14, R = 196;
+  function titulo(txt){ doc.setFont("helvetica","bold"); doc.setFontSize(10.5); doc.setTextColor(27,42,74); doc.text(txt, L, y); y += 6; }
+  function linea(txt, val, o){
+    o = o || {};
+    doc.setFont("helvetica", o.bold ? "bold" : "normal"); doc.setFontSize(o.sub ? 8.5 : 9.5);
+    const c = o.color || (o.sub ? [120,120,120] : [40,40,40]); doc.setTextColor(c[0],c[1],c[2]);
+    doc.text(txt, L + (o.sub ? 8 : 0), y); doc.text(val, R, y, {align:"right"});
+    y += o.sub ? 5 : 6;
+    doc.setDrawColor(235,235,235); if(!o.sub) doc.line(L, y-3.6, R, y-3.6);
+  }
+  titulo("Ingresos");
+  linea("Intereses cobrados", money(dat.T.intereses));
+  linea("Capital cobrado", money(dat.T.capital));
+  linea("De cuotas", money(dat.T.capitalCuotas), {sub:true});
+  linea("Por abonos a capital", money(dat.T.abonos), {sub:true});
+  linea("Mora cobrada", money(dat.T.mora));
+  linea("Enganches al refinanciar", money(dat.T.enganches));
+  linea("Total ingresos", money(dat.ingresos), {bold:true});
+  y += 4; titulo("Egresos");
+  linea("Desembolsos (capital prestado)", money(dat.desembolsos));
+  linea("Total egresos", money(dat.desembolsos), {bold:true});
+  if(dat.mostrarGananciaModif && dat.gananciaPerdidaModificaciones!==0){
+    y += 4; titulo("Ganancia/(pérdida) por modificación de préstamos (NIIF PYMES)");
+    linea(dat.gananciaPerdidaModificaciones>=0 ? "Ganancia por modificación" : "Pérdida por modificación", money(dat.gananciaPerdidaModificaciones), {bold:true});
+  }
+  y += 7;
+  doc.setDrawColor(27,42,74); doc.setLineWidth(0.5); doc.line(L, y-3, R, y-3); doc.setLineWidth(0.2);
+  linea((dat.utilidad>=0 ? "Utilidad" : "Pérdida") + " del período", money(Math.abs(dat.utilidad)), {bold:true, color: dat.utilidad>=0 ? [59,109,17] : [163,45,45]});
+  y += 4;
+  y = jrPDFParrafo(doc, y, "Nota: es un estado en base efectivo (dinero que entra vs. dinero que sale), no un estado contable formal.", 8);
+  return jrPDFPies(doc);
+}
+function pdfReporteModificaciones(){
+  const eventos = listaModificaciones();
+  const totalGanancia = eventos.reduce(function(s,e){ return s+e.gananciaPerdida; },0);
+  const nSust = eventos.filter(function(e){ return e.tipo==="sustancial"; }).length;
+  const t = jrPDFNuevo("Modificaciones y refinanciamientos (NIIF PYMES)  ·  " + fmtDate(hoyISO()), []);
+  const doc = t.doc; let y = t.y;
+  if(!eventos.length){
+    y = jrPDFParrafo(doc, y+2, "Todavía no se ha refinanciado ni modificado ningún préstamo.", 9);
+    return jrPDFPies(doc);
+  }
+  const cols = [{label:"Fecha",w:19},{label:"Préstamo",w:24},{label:"Cliente",w:31},{label:"Clasif.",w:22},{label:"Capital antes",w:23,align:"right"},{label:"Capital desp.",w:23,align:"right"},{label:"Tasa",w:18,align:"right"},{label:"Gan./(pér.)",w:22,align:"right"}];
+  const filas = eventos.map(function(e){
+    const g = Math.abs(e.gananciaPerdida)>=0.005 ? {t:money(e.gananciaPerdida), color:(e.gananciaPerdida>=0?[59,109,17]:[163,45,45])} : "—";
+    const tasa = (e.tasaAntes!=null && e.tasaAntes!==e.tasaDespues) ? (e.tasaAntes+"% a "+e.tasaDespues+"%") : (e.tasaDespues+"%");
+    return [fmtDateCorta(e.fecha), e.codigo + (e.tipo==="sustancial" && e.codigoOrigen!=="—" ? " (de "+e.codigoOrigen+")" : ""), e.cliente,
+            e.tipo==="sustancial" ? "Sustancial" : "No sustancial", e.capitalAntes!=null ? money(e.capitalAntes) : "—", money(e.capitalDespues), tasa, g];
+  });
+  y = jrPDFTabla(doc, y, cols, filas, {fontSize:8}) + 6;
+  doc.setFont("helvetica","normal"); doc.setFontSize(9.5); doc.setTextColor(40,40,40);
+  if(y > doc.internal.pageSize.getHeight()-40){ doc.addPage(); y = 16; }
+  doc.text("Modificaciones sustanciales (préstamo nuevo)", 14, y); doc.text(String(nSust), 196, y, {align:"right"}); y += 6;
+  doc.text("Modificaciones NO sustanciales (mismo préstamo)", 14, y); doc.text(String(eventos.length-nSust), 196, y, {align:"right"}); y += 7;
+  doc.setFont("helvetica","bold");
+  const c = totalGanancia>=0 ? [59,109,17] : [163,45,45]; doc.setTextColor(c[0],c[1],c[2]);
+  doc.text((totalGanancia>=0 ? "Ganancia" : "Pérdida") + " neta por modificaciones", 14, y); doc.text(money(Math.abs(totalGanancia)), 196, y, {align:"right"});
+  return jrPDFPies(doc);
+}
+function pdfReportePorTipo(tipo){
+  return tipo==="resultados" ? pdfReporteResultados() : (tipo==="modificaciones" ? pdfReporteModificaciones() : pdfReporteGeneral());
+}
+function nombreArchivoReporte(tipo){
+  return tipo==="resultados" ? "estado-de-resultados.pdf" : (tipo==="modificaciones" ? "modificaciones.pdf" : "reporte-general.pdf");
+}
+function imprimirReporte(tipo){
+  cargarJsPDF(function(){
+    try{ imprimirPDFDoc(pdfReportePorTipo(tipo)); }
+    catch(err){ alert("Ocurrió un error generando el PDF. Intenta de nuevo."); }
+  });
+}
+function compartirReporte(tipo){
+  cargarJsPDF(async function(){
+    try{ await compartirPDF(pdfReportePorTipo(tipo), nombreArchivoReporte(tipo)); }
+    catch(err){ alert("Ocurrió un error generando el PDF. Intenta de nuevo."); }
+  });
+}
 function generarPDFTabla(p, cli, r){
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({unit:"mm", format:"a4", orientation:"landscape"});
+  const doc = new jsPDF({unit:"mm", format:"a4"});
   const pageH = doc.internal.pageSize.getHeight();
   const marginX = 14;
   let y = 16;
@@ -2836,29 +3129,30 @@ function generarPDFTabla(p, cli, r){
   doc.text(nombreNegocio(), marginX, y); y+=7;
   doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(90,90,90);
   doc.text(`Tabla de amortización — ${p.codigo}`, marginX, y); y+=5;
-  doc.text(`Cliente: ${cli?cli.nombre:"—"}   ·   Capital: ${money(p.capital)}   ·   Tasa: ${p.tasa}%   ·   Período: ${p.periodo}   ·   Método: ${p.metodo}`, marginX, y); y+=8;
+  doc.splitTextToSize(`Cliente: ${cli?cli.nombre:"—"}   ·   Capital: ${money(p.capital)}   ·   Tasa: ${p.tasa}%   ·   Período: ${p.periodo}   ·   Método: ${p.metodo}`, 182).forEach(function(l){ doc.text(l, marginX, y); y+=4.6; });
+  y += 3;
 
   const cols = [
-    {label:"#", w:12, align:"left"},
-    {label:"Fecha", w:26, align:"left"},
-    {label:"Interés", w:30, align:"right"},
-    {label:"Abono a capital", w:38, align:"right"},
-    {label:"Cuota", w:30, align:"right"},
-    {label:"Saldo", w:32, align:"right"},
-    {label:"Estado", w:40, align:"left"}
+    {label:"#", w:10, align:"left"},
+    {label:"Fecha", w:24, align:"left"},
+    {label:"Interés", w:26, align:"right"},
+    {label:"Abono a capital", w:30, align:"right"},
+    {label:"Cuota", w:26, align:"right"},
+    {label:"Saldo", w:28, align:"right"},
+    {label:"Estado", w:38, align:"left"}
   ];
   const anchoTotal = cols.reduce((s,c)=>s+c.w,0);
   function dibujarEncabezado(){
     doc.setFillColor(27,42,74);
     doc.rect(marginX, y-5, anchoTotal, 7, "F");
     let x = marginX;
-    doc.setFont("helvetica","bold"); doc.setFontSize(9.5); doc.setTextColor(255,255,255);
+    doc.setFont("helvetica","bold"); doc.setFontSize(8.5); doc.setTextColor(255,255,255);
     cols.forEach(c=>{
       doc.text(c.label, c.align==="right"? x+c.w-2 : x+2, y, {align: c.align==="right"?"right":"left"});
       x+=c.w;
     });
     y+=6;
-    doc.setTextColor(40,40,40); doc.setFont("helvetica","normal"); doc.setFontSize(9);
+    doc.setTextColor(40,40,40); doc.setFont("helvetica","normal"); doc.setFontSize(8.5);
   }
   dibujarEncabezado();
   const esIndefPDF = p.metodo === METODOS[5];
@@ -2883,7 +3177,7 @@ function generarPDFTabla(p, cli, r){
     y+=6;
     doc.setDrawColor(235,235,235); doc.line(marginX, y-2, marginX+anchoTotal, y-2);
   });
-  return doc;
+  return jrPDFPies(doc);
 }
 async function compartirPDF(doc, filename){
   const blob = doc.output("blob");
