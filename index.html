@@ -6,22 +6,40 @@
 <title>JR Prestamito</title>
 <meta name="theme-color" content="#1B2A4A">
 <script>
-// Salida con "atrás": si la app acaba de intentar salir y el navegador regresó a una carga anterior
-// de la misma app (el historial de la pestaña la conserva), se sigue retrocediendo sin mostrarla,
-// para que el segundo "atrás" sí salga de verdad.
+// Historial de la pestaña: cada vez que la app se recarga (actualizar versión, abrirla de nuevo)
+// dejaba una entrada más, y luego había que dar "atrás" muchas veces para salir. Aquí se evita:
+// 1) Si la app acaba de intentar salir y el navegador regresó a una carga anterior de la misma
+//    app, se sigue retrocediendo sin mostrarla, para que el segundo "atrás" sí salga de verdad.
+// 2) Si al cargar la página la entrada actual es una "entrada de arriba" que dejó una carga
+//    anterior, se retrocede a la base de esa carga y se reutiliza, en vez de sumar otra más.
 (function(){
   try{
-    var t = Number(sessionStorage.getItem("jr_salida")||0);
     var nav = (window.performance && performance.getEntriesByType && performance.getEntriesByType("navigation")[0]) || {};
+    var ocultar = function(){ document.documentElement.style.visibility = "hidden"; };
+    var mostrar = function(clave){
+      return function(){
+        try{ sessionStorage.removeItem(clave); }catch(e){}
+        document.documentElement.style.visibility = "";
+      };
+    };
+    var t = Number(sessionStorage.getItem("jr_salida")||0);
     if(t && Date.now()-t < 6000 && nav.type==="back_forward"){
       sessionStorage.setItem("jr_salida", String(Date.now()));
-      document.documentElement.style.visibility = "hidden";
+      ocultar();
       history.back();
-      setTimeout(function(){
-        try{ sessionStorage.removeItem("jr_salida"); }catch(e){}
-        document.documentElement.style.visibility = "";
-      }, 1200);
+      setTimeout(mostrar("jr_salida"), 1200);
+      return;
     }
+    var st = null;
+    try{ st = history.state; }catch(e){}
+    if(st && st.jr && history.length > 1){
+      sessionStorage.setItem("jr_reuso", String(Date.now()));
+      ocultar();
+      history.back();
+      setTimeout(mostrar("jr_reuso"), 1500);
+      return;
+    }
+    try{ sessionStorage.removeItem("jr_reuso"); }catch(e){}
   }catch(e){}
 })();
 </script>
@@ -2040,7 +2058,7 @@ function viewAjustes(){
   <div class="row-card" style="display:block;">
     ${htmlSeguridad()}
   </div>
-  <p style="text-align:center;font-size:12px;color:#8a8680;margin:18px 0 8px;">Versión 17.0</p>`;
+  <p style="text-align:center;font-size:12px;color:#8a8680;margin:18px 0 8px;">Versión 18.0</p>`;
 }
 
 function viewClientes(){
