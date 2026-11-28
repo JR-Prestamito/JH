@@ -2054,7 +2054,7 @@ function viewAjustes(){
   <div class="row-card" style="display:block;">
     ${htmlSeguridad()}
   </div>
-  <p style="text-align:center;font-size:12px;color:#8a8680;margin:18px 0 8px;">Versión 17.0</p>`;
+  <p style="text-align:center;font-size:12px;color:#8a8680;margin:18px 0 8px;">Versión 18.0</p>`;
 }
 
 function viewClientes(){
@@ -2870,7 +2870,7 @@ function viewDetallePrestamo(){
       <p class="hint">${nVenc>1 ? `El monto sugerido ya incluye las ${nVenc} cuotas vencidas${moraCalc>0?" y la mora":""}.` : (moraCalc>0 ? "El monto ya incluye la mora; desmarca la casilla para dejar solo la cuota." : "Déjalo vacío para pagar lo sugerido.")} Un monto menor queda como abono parcial a la cuota. Si pagas de más (después de completarla), el excedente se registra como <b>abono a capital</b> — se puede hacer cualquier día.</p>
     </div></details>
     <details class="row-card op-sec" ${state._opAbierta==="abono"?"open":""} ontoggle="opToggle(this,'abono')"><summary><b>Solo abono a capital</b></summary><div class="cuerpo">
-      <p class="hint" style="margin:0 0 10px;">Baja el capital sin pagar la cuota. El interés de la cuota en curso se sigue calculando sobre el capital anterior; el nuevo capital cuenta desde la cuota siguiente.</p>
+      <p class="hint" style="margin:0 0 10px;">Baja el capital sin pagar la cuota. El interés de la cuota en curso se sigue calculando sobre el capital anterior; el nuevo capital cuenta desde la cuota siguiente. Si hay cuotas vencidas, primero se pagan la mora y esas cuotas; solo lo que sobre baja el capital.</p>
       <div class="flexrow">
         <input type="text" inputmode="decimal" id="montoAbonoCapital" placeholder="Monto a capital">
         <button class="btn btn-gold" style="width:auto;padding:0 18px;" onclick="registrarAbonoCapital('${p.id}')">Abonar</button>
@@ -3547,32 +3547,72 @@ function registrarAbonoCapital(id){
   const monto = round2(Number(String(document.getElementById("montoAbonoCapital").value||"").replace(/,/g,"")));
   if(!monto || monto<=0){ alert("Escribe el monto que se abonará a capital."); return; }
   const capitalAntes = r.capitalPendiente!=null ? r.capitalPendiente : Number(p.capital)||0;
-  if(monto >= capitalAntes - 0.01){
+  // Cascada de pagos: si el préstamo tiene cuotas vencidas, lo recibido paga primero la mora, luego
+  // esas cuotas (la más antigua primero) y solo lo que sobre baja el capital.
+  const pend = calcularPendiente(p, r);
+  const cascada = p.metodo !== METODOS[4] && pend.nVenc>0 && pend.monto>0.01;
+  let aMora = 0, aCuota = 0, aCap = monto;
+  if(cascada){
+    aMora = round2(Math.min(monto, pend.mora));
+    aCuota = round2(Math.min(monto-aMora, pend.monto));
+    aCap = round2(monto-aMora-aCuota);
+    if(aCap <= 0.01) aCap = 0;
+  }
+  if(aCap > 0 && aCap >= capitalAntes - 0.01){
     alert("Ese monto cubre todo el capital pendiente (" + money(capitalAntes) + "). Para cerrar el préstamo usa \"Liquidar anticipado\".");
     return;
   }
   const fEl = document.getElementById("fechaAbonoCapital");
   const fecha = (fEl && fEl.value) ? fEl.value : hoyISO();
   const cli = state.clientes.find(c=>c.id===p.clienteId);
+  let detalle;
+  if(cascada){
+    detalle = `Recibido: ${money(monto)}\n` +
+      `El préstamo tiene ${pend.nVenc>1 ? pend.nVenc+" cuotas vencidas" : "una cuota vencida"}; se aplica en este orden:\n` +
+      (aMora>0 ? `Mora: ${money(aMora)}\n` : ``) +
+      (aCuota>0 ? `${pend.nVenc>1 ? "Cuotas vencidas" : "Cuota vencida"}: ${money(aCuota)}\n` : ``) +
+      `Abono a capital: ${money(aCap)}\n` +
+      (aCap>0 ? `Capital pendiente: ${money(capitalAntes)} → ${money(round2(capitalAntes-aCap))}\n` : ``);
+  } else {
+    detalle = `Abono a capital: ${money(monto)}\n` +
+      `Capital pendiente: ${money(capitalAntes)} → ${money(round2(capitalAntes-monto))}\n\n` +
+      `Esto NO paga la cuota en curso.\n`;
+  }
   const ok = confirm(
-    `Vas a registrar un abono SOLO a capital con fecha ${fmtDate(fecha)}:\n` +
+    `Vas a registrar un pago con fecha ${fmtDate(fecha)}:\n` +
     `Cliente: ${cli?cli.nombre:"—"}\n` +
     `Préstamo: ${p.codigo}\n` +
-    `Abono a capital: ${money(monto)}\n` +
-    `Capital pendiente: ${money(capitalAntes)} → ${money(round2(capitalAntes-monto))}\n\n` +
-    `Esto NO paga la cuota en curso. ¿Confirmas?`
+    detalle + `\n¿Confirmas?`
   );
   if(!ok) return;
   p.pagos = p.pagos || [];
-  const idPago = uid();
-  p.pagos.push({ id:idPago, fecha, monto, mora:0, tipo:"abono_capital", soloCapital:true, interes:0, capital:monto });
-  // Igual que un abono junto a la cuota, el ajuste cae DESPUÉS de la(s) cuota(s) en curso o
-  // vencidas: esas ya generaron su interés sobre el capital anterior.
-  p.ajustesCapital = p.ajustesCapital || [];
-  p.ajustesCapital.push({ despuesDeFila: (p.metodo === METODOS[4]) ? Math.min(r.tabla.length, Math.max(1, r.tabla.filter(f=>f.fecha < fecha).length)) : (r.pagosHechos||0) + Math.max(1, cuotasVencidas(r)), monto, fecha, pagoId:idPago, soloCapital:true });
+  let rAb = r;
+  if(aMora+aCuota > 0){
+    const pagoCuota = { id:uid(), fecha, monto:aCuota, mora:aMora, tipo:"cuota" };
+    const repartoAntes = desglosePagado(p);
+    p.pagos.push(pagoCuota);
+    const repartoDespues = desglosePagado(p);
+    pagoCuota.interes = round2(Math.max(0, Math.min(aCuota, repartoDespues.interes - repartoAntes.interes)));
+    pagoCuota.capital = round2(aCuota - pagoCuota.interes);
+    rAb = resumen(p);
+  }
+  if(aCap > 0){
+    const idPago = uid();
+    p.pagos.push({ id:idPago, fecha, monto:aCap, mora:0, tipo:"abono_capital", soloCapital:true, interes:0, capital:aCap });
+    // Igual que un abono junto a la cuota, el ajuste cae DESPUÉS de la(s) cuota(s) en curso o
+    // vencidas: esas ya generaron su interés sobre el capital anterior.
+    p.ajustesCapital = p.ajustesCapital || [];
+    p.ajustesCapital.push({ despuesDeFila: (p.metodo === METODOS[4]) ? Math.min(rAb.tabla.length, Math.max(1, rAb.tabla.filter(f=>f.fecha < fecha).length)) : (rAb.pagosHechos||0) + Math.max(1, cuotasVencidas(rAb)), monto:aCap, fecha, pagoId:idPago, soloCapital:true });
+  }
   save(); render();
   const r2 = resumen(p);
-  let msg = `✅ Abono a capital registrado: ${money(monto)}.\n\nCapital pendiente: ${money(r2.capitalPendiente)}.`;
+  let msg = `✅ Registrado: ${money(monto)}.`;
+  if(cascada){
+    if(aMora>0) msg += `\nMora: ${money(aMora)}`;
+    if(aCuota>0) msg += `\nCuotas: ${money(aCuota)}`;
+    if(aCap>0) msg += `\nAbono a capital: ${money(aCap)}`;
+  }
+  msg += `\n\nCapital pendiente: ${money(r2.capitalPendiente)}.`;
   if(r2.proximaFecha) msg += `\nPróxima cuota: ${fmtDate(r2.proximaFecha)} (${money(r2.faltaEnCuotaActual||r2.cuota)}).`;
   alert(msg);
 }
