@@ -822,15 +822,36 @@ function prorrateoPrimeraCuota(p, interes1){
   if(dias <= 0 || dias >= D) return 0;
   return -round2((Number(interes1)||0) * (D - dias) / D);
 }
+function diasEntreISO(a, b){
+  if(!a || !b) return 0;
+  return Math.round((new Date(String(b).slice(0,10)+"T00:00:00") - new Date(String(a).slice(0,10)+"T00:00:00"))/86400000);
+}
+// Fracción del período (0 a 1) que queda DESPUÉS de la fecha del abono, dentro de la cuota "i".
+function fraccionPeriodoDespues(fechaAbono, fechaCuotaI, fechaCuotaPrev){
+  const per = Math.max(1, diasEntreISO(fechaCuotaPrev, fechaCuotaI));
+  return Math.max(0, Math.min(1, diasEntreISO(fechaAbono, fechaCuotaI)/per));
+}
 function abonosDirectosDeFila(p, f){
-  if(!f || f.n==null) return { fila:f, abonos:[] };
-  const lista = (p.ajustesCapital||[]).filter(a=>a.soloCapital && a.despuesDeFila===f.n).sort((a,b)=>String(a.fecha||"").localeCompare(String(b.fecha||"")));
-  if(!lista.length) return { fila:f, abonos:[] };
+  // Separa de la fila los abonos directos a capital para mostrarlos en su propia línea (solo presentación).
+  // Los que tienen "prorrata" (fecha propia) salen ANTES de la cuota de su período, en orden de fecha;
+  // los demás, justo después.
+  if(!f || f.n==null) return { fila:f, antes:[], abonos:[] };
+  const base = (p.ajustesCapital||[]).filter(a=>a.soloCapital && a.despuesDeFila===f.n).sort((a,b)=>String(a.fecha||"").localeCompare(String(b.fecha||"")));
+  if(!base.length) return { fila:f, antes:[], abonos:[] };
+  const lAntes = base.filter(a=>a.prorrata), lDesp = base.filter(a=>!a.prorrata);
+  const suma = l=>l.reduce((t,a)=>t+(Number(a.monto)||0),0);
+  const extraAntes = suma(lAntes);
   const directo = Number(f.capitalDirecto)||0;
-  const fila = Object.assign({}, f, { abono: round2(Math.max(0,(Number(f.abono)||0)-directo)), saldo: round2((Number(f.saldo)||0)+directo) });
+  const s0 = round2((Number(f.saldo)||0)+(Number(f.abono)||0));   // saldo con el que empezó la cuota
+  const fila = Object.assign({}, f, {
+    abono: round2(Math.max(0,(Number(f.abono)||0)-directo)),
+    saldo: round2((Number(f.saldo)||0)+Math.max(0, directo-extraAntes))
+  });
+  let sA = s0;
+  const antes = lAntes.map(a=>{ const m=Number(a.monto)||0; sA=round2(Math.max(0,sA-m)); return {fecha:a.fecha, monto:m, saldo:sA}; });
   let s = fila.saldo;
-  const abonos = lista.map(a=>{ const m=Number(a.monto)||0; s=round2(Math.max(0,s-m)); return {fecha:a.fecha, monto:m, saldo:s}; });
-  return { fila, abonos };
+  const abonos = lDesp.map(a=>{ const m=Number(a.monto)||0; s=round2(Math.max(0,s-m)); return {fecha:a.fecha, monto:m, saldo:s}; });
+  return { fila, antes, abonos };
 }
 function generarTablaDinamica(p){
   const t = generarTablaDinamicaBase(p);
@@ -869,6 +890,15 @@ function generarTablaDinamicaBase(p){
       saldoSeg = round2(Math.max(0, saldoSeg-(Number(aj.monto)||0)));
       desdeFila = aj.despuesDeFila;
     }
+    // Abonos con fecha propia (prorrata): el interés del período en que cayeron baja solo por los días
+    // que quedaban después del abono.
+    let credAm = 0;
+    ajustes.forEach(aq=>{
+      if(!aq.prorrata) return;
+      const k = Math.max(1, Math.min(aq.despuesDeFila, nOriginal));
+      credAm += (Number(aq.monto)||0)*tasa*fraccionPeriodoDespues(aq.fecha, fechaCuotaDe(p, dias, k), k>1 ? fechaCuotaDe(p, dias, k-1) : p.fechaInicio);
+    });
+    credAm = round2(credAm);
     // El abono se muestra en la fila donde cae y el saldo mostrado baja desde ahí. Igual que en los
     // demás métodos: lo que no es abono directo a capital forma parte de la cuota de esa fila.
     const filas = [];
@@ -882,7 +912,7 @@ function generarTablaDinamicaBase(p){
         idxAj++;
       }
       saldoMostrado = round2(Math.max(0, saldoMostrado-extra));
-      const interes = esUltima ? round2(interesAcum + saldoSeg*tasa*(nOriginal-desdeFila)) : 0;
+      const interes = esUltima ? round2(Math.max(0, interesAcum + saldoSeg*tasa*(nOriginal-desdeFila) - credAm)) : 0;
       const abono = round2((esUltima ? saldoSeg : 0) + extra);
       const cuota = round2(interes+abono-directo);
       filas.push({n:i, fecha:fechaCuotaDe(p, dias, i), cuota, interes, abono, saldo: esUltima?0:saldoMostrado, capitalDirecto:directo});
@@ -942,9 +972,18 @@ function generarTablaDinamicaBase(p){
   for(let i=1; i<=(esIndef?totalFilasIndef:9999); i++){
     if(!esIndef && i>nTotalVigente) break;
     const saldoInicial = saldo;
+    // Abonos con fecha propia (prorrata) que caen en esta cuota: el interés de este período baja por los
+    // días que quedaban después de cada abono (el capital nuevo cuenta desde la fecha del abono).
+    let cred = 0;
+    for(let q=idxAj; q<ajustes.length && ajustes[q].despuesDeFila===i; q++){
+      const aq = ajustes[q]; if(!aq.prorrata) continue;
+      cred += (Number(aq.monto)||0)*tasa*fraccionPeriodoDespues(aq.fecha, fechaCuotaDe(p, dias, i), i>1 ? fechaCuotaDe(p, dias, i-1) : p.fechaInicio);
+    }
+    cred = round2(cred);
     let interes, abonoProgramado;
     if(metodo===METODOS[0]){
       interes = round2(saldo*tasa);
+      if(cred>0) interes = round2(Math.max(0, interes-cred));
       abonoProgramado = (i===nTotalVigente) ? saldo : round2(cuotaFijaVigente-interes);
     } else if(metodo===METODOS[1]){
       interes = round2(saldo*tasa);
@@ -960,6 +999,7 @@ function generarTablaDinamicaBase(p){
       interes = interesFijoVigente;
       abonoProgramado = 0;
     }
+    if(cred>0 && metodo!==METODOS[0]) interes = round2(Math.max(0, interes-cred));
     let abono = abonoProgramado;
     let huboAjuste = false;
     let capitalDirecto = 0; // abonos directos a capital (se pagan aparte, no forman parte de la cuota)
@@ -2054,7 +2094,7 @@ function viewAjustes(){
   <div class="row-card" style="display:block;">
     ${htmlSeguridad()}
   </div>
-  <p style="text-align:center;font-size:12px;color:#8a8680;margin:18px 0 8px;">Versión 18.0</p>`;
+  <p style="text-align:center;font-size:12px;color:#8a8680;margin:18px 0 8px;">Versión 19.0</p>`;
 }
 
 function viewClientes(){
@@ -2785,8 +2825,10 @@ function viewDetallePrestamo(){
   // En un préstamo refinanciado el resumen marca todas las cuotas como hechas; aquí se cuenta
   // cuántas cubrió de verdad lo que el cliente pagó.
   const pagosRealesTabla = r.cuotasPagadas!=null ? r.cuotasPagadas : r.pagosHechos;
+  const _filasAb = lista => lista.map(a=>`<tr><td></td><td>${fmtDateCompacto(a.fecha)}</td><td></td><td style="color:#0F6E56;font-weight:700;">${money(a.monto)}</td><td></td><td>${money(a.saldo)}</td><td style="color:#0F6E56;">Abono a capital</td></tr>`).join("");
   let filasHtml = filasParaTabla.map((f0,i)=>{
     const _ad = abonosDirectosDeFila(p, f0); const f = _ad.fila;
+    const _pre = _filasAb(_ad.antes);
     // Estado real de cada cuota: Pagada, Abonada (parcial), Vencida, Pendiente
     // (o Refinanciada, si el préstamo se cerró por refinanciamiento antes de pagarla).
     let estadoCelda;
@@ -2803,12 +2845,12 @@ function viewDetallePrestamo(){
     }
     else if(vencida) estadoCelda = '<span style="color:#A32D2D;">Vencida</span>';
     else estadoCelda = '<span style="color:#8a8680">Pendiente</span>';
-    return `<tr><td>${f.n}</td><td>${fmtDateCompacto(f.fecha)}</td>
+    return _pre + `<tr><td>${f.n}</td><td>${fmtDateCompacto(f.fecha)}</td>
     <td>${money(f.interes)}</td>
     <td>${money(f.abono)}</td>
     <td style="font-weight:600;">${money(f.cuota)}</td>
     <td>${f.saldo==null ? "—" : money(f.saldo)}</td>
-    <td>${estadoCelda}</td></tr>` + _ad.abonos.map(a=>`<tr><td></td><td>${fmtDateCompacto(a.fecha)}</td><td></td><td style="color:#0F6E56;font-weight:700;">${money(a.monto)}</td><td></td><td>${money(a.saldo)}</td><td style="color:#0F6E56;">Abono a capital</td></tr>`).join("");
+    <td>${estadoCelda}</td></tr>` + _filasAb(_ad.abonos)
   }).join("");
   // Las filas "incluidas en la liquidación" no se suman: su interés ya va en la línea de liquidación.
   const filasTotales = filasParaTabla.filter(f=>!f.incluidaLiq);
@@ -2870,7 +2912,7 @@ function viewDetallePrestamo(){
       <p class="hint">${nVenc>1 ? `El monto sugerido ya incluye las ${nVenc} cuotas vencidas${moraCalc>0?" y la mora":""}.` : (moraCalc>0 ? "El monto ya incluye la mora; desmarca la casilla para dejar solo la cuota." : "Déjalo vacío para pagar lo sugerido.")} Un monto menor queda como abono parcial a la cuota. Si pagas de más (después de completarla), el excedente se registra como <b>abono a capital</b> — se puede hacer cualquier día.</p>
     </div></details>
     <details class="row-card op-sec" ${state._opAbierta==="abono"?"open":""} ontoggle="opToggle(this,'abono')"><summary><b>Solo abono a capital</b></summary><div class="cuerpo">
-      <p class="hint" style="margin:0 0 10px;">Baja el capital sin pagar la cuota. El interés de la cuota en curso se sigue calculando sobre el capital anterior; el nuevo capital cuenta desde la cuota siguiente. Si hay cuotas vencidas, primero se pagan la mora y esas cuotas; solo lo que sobre baja el capital.</p>
+      <p class="hint" style="margin:0 0 10px;">Baja el capital sin pagar la cuota. El interés se calcula día por día: el capital nuevo cuenta desde la fecha del abono. Solo para préstamos al día; con cuotas vencidas usa Registrar pago.</p>
       <div class="flexrow">
         <input type="text" inputmode="decimal" id="montoAbonoCapital" placeholder="Monto a capital">
         <button class="btn btn-gold" style="width:auto;padding:0 18px;" onclick="registrarAbonoCapital('${p.id}')">Abonar</button>
@@ -3224,7 +3266,7 @@ function generarPDFTabla(p, cli, r){
       })()
     : r.tabla);
   const itemsPDF = [];
-  filasPDF.forEach((f0,i)=>{ const ad = abonosDirectosDeFila(p, f0); itemsPDF.push({f:ad.fila,i}); ad.abonos.forEach(a=>itemsPDF.push({abono:a})); });
+  filasPDF.forEach((f0,i)=>{ const ad = abonosDirectosDeFila(p, f0); ad.antes.forEach(a=>itemsPDF.push({abono:a})); itemsPDF.push({f:ad.fila,i}); ad.abonos.forEach(a=>itemsPDF.push({abono:a})); });
   itemsPDF.forEach((it)=>{
     if(y > pageH-14){ doc.addPage(); y=16; dibujarEncabezado(); }
     if(it.abono){
@@ -3547,18 +3589,20 @@ function registrarAbonoCapital(id){
   const monto = round2(Number(String(document.getElementById("montoAbonoCapital").value||"").replace(/,/g,"")));
   if(!monto || monto<=0){ alert("Escribe el monto que se abonará a capital."); return; }
   const capitalAntes = r.capitalPendiente!=null ? r.capitalPendiente : Number(p.capital)||0;
-  // Cascada de pagos: si el préstamo tiene cuotas vencidas, lo recibido paga primero la mora, luego
-  // esas cuotas (la más antigua primero) y solo lo que sobre baja el capital.
+  // Con cuotas vencidas el dinero debe cubrir primero la mora y esas cuotas: eso se hace en "Registrar pago"
+  // (lo que sobre allí se aplica a capital). Aquí solo se abona a capital un préstamo al día.
   const pend = calcularPendiente(p, r);
-  const cascada = p.metodo !== METODOS[4] && pend.nVenc>0 && pend.monto>0.01;
-  let aMora = 0, aCuota = 0, aCap = monto;
-  if(cascada){
-    aMora = round2(Math.min(monto, pend.mora));
-    aCuota = round2(Math.min(monto-aMora, pend.monto));
-    aCap = round2(monto-aMora-aCuota);
-    if(aCap <= 0.01) aCap = 0;
+  const _fEl0 = document.getElementById("fechaAbonoCapital");
+  const _fechaB = (_fEl0 && _fEl0.value) ? _fEl0.value : hoyISO();
+  // Se cuentan las cuotas que ya estaban vencidas A LA FECHA del abono (un abono olvidado de días
+  // anteriores se puede registrar aunque hoy el préstamo ya tenga atraso).
+  const vencALaFecha = r.tabla.slice(r.pagosHechos||0).filter(function(f){ return f.fecha < _fechaB; }).length;
+  if(p.metodo !== METODOS[4] && vencALaFecha>0 && pend.monto>0.01){
+    alert(`Este préstamo tiene ${pend.nVenc>1 ? pend.nVenc+" cuotas vencidas" : "una cuota vencida"} (${money(pend.monto)}${pend.mora>0 ? " + mora "+money(pend.mora) : ""}).\n\nPrimero ponlo al día en "Registrar pago": lo que sobre se aplica a capital.`);
+    return;
   }
-  if(aCap > 0 && aCap >= capitalAntes - 0.01){
+  const aMora = 0, aCuota = 0, aCap = monto, cascada = false;
+  if(aCap >= capitalAntes - 0.01){
     alert("Ese monto cubre todo el capital pendiente (" + money(capitalAntes) + "). Para cerrar el préstamo usa \"Liquidar anticipado\".");
     return;
   }
@@ -3602,7 +3646,11 @@ function registrarAbonoCapital(id){
     // Igual que un abono junto a la cuota, el ajuste cae DESPUÉS de la(s) cuota(s) en curso o
     // vencidas: esas ya generaron su interés sobre el capital anterior.
     p.ajustesCapital = p.ajustesCapital || [];
-    p.ajustesCapital.push({ despuesDeFila: (p.metodo === METODOS[4]) ? Math.min(rAb.tabla.length, Math.max(1, rAb.tabla.filter(f=>f.fecha < fecha).length)) : (rAb.pagosHechos||0) + Math.max(1, cuotasVencidas(rAb)), monto:aCap, fecha, pagoId:idPago, soloCapital:true });
+    // El abono cae en la cuota del período en que se hizo (según su FECHA) y el interés de ese período se
+    // prorratea por días. Si es de hoy, nunca antes de las cuotas ya pagadas por adelantado.
+    let filaAbono = Math.min(rAb.tabla.length, rAb.tabla.filter(f=>f.fecha < fecha).length + 1);
+    if(fecha >= hoyISO()) filaAbono = Math.min(rAb.tabla.length, Math.max(filaAbono, (rAb.pagosHechos||0) + 1));
+    p.ajustesCapital.push({ despuesDeFila: filaAbono, monto:aCap, fecha, pagoId:idPago, soloCapital:true, prorrata:true });
   }
   save(); render();
   const r2 = resumen(p);
